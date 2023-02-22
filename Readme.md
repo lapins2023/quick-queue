@@ -29,7 +29,7 @@ Quick-Queue是一个Java进程内高性能，低延迟，零拷贝，持久化�
     for (int i = 0; i < 10; i++) {
         long offset = writer.newMessage()
                 .packInt(i)
-                .packBigDecimal(BigDecimal.valueOf(i)) //BigDecimal使用二进制序列化的方式，如需要跨语言可以使用String类型或BJSON Decimal128
+                .packBigDecimal(BigDecimal.valueOf(i)) //BigDecimal使用二进制序列化的方式，如需要跨语言可以使用String类型或Decimal128
                 .packString(String.valueOf(i)) //// packString只支持ascii，如果需要存储Unicode如中文请使用packUnicode
                 .packBoolean(i % 2 == 0)
                 .writeMessage(); //调用writeMessage进行消息写入
