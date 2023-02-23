@@ -76,4 +76,7 @@ abstract class Utils {
     static byte getByte(long address) {
         return UNSAFE.getByte(address);
     }
+    static long getLong(long address) {
+        return UNSAFE.getLong(address);
+    }
 }
