@@ -18,8 +18,4 @@ class PageBuffer {
     public String toString() {
         return "PBuff[(" + page + ")" + buffer + "@" + address + ']';
     }
-
-    public int position() {
-        return buffer.position();
-    }
 }

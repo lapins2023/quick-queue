@@ -5,44 +5,31 @@ import java.io.File;
 
 public class QuickQueue {
     final File dataDir;
-    private QuickQueueWriter writer;
+    private final QuickQueueWriter writer;
 
 
-    public QuickQueue(String dataDir) {
-        this(new File(dataDir));
-    }
-
-    public QuickQueue(File dataDir) {
+    public QuickQueue(File dataDir, String mode) {
+        if (!(mode.equalsIgnoreCase("r") || mode.equalsIgnoreCase("rw")))
+            throw new IllegalArgumentException("mode must r,rw");
         this.dataDir = dataDir;
-        open();
-    }
-
-    private void open() {
         if (dataDir.exists()) {
-            if (dataDir.isFile()) {
-                throw new IllegalArgumentException("File " + dataDir + " exists and is not a directory. Unable to create directory.");
-            }
+            if (dataDir.isFile()) throw new IllegalArgumentException("NotDirFileExists=" + dataDir);
         } else {
-            if (!dataDir.mkdirs()) {
-                throw new IllegalArgumentException("Unable to create directory " + dataDir);
-            }
+            if (!dataDir.mkdirs()) throw new IllegalArgumentException("UnableMkdir=" + dataDir);
         }
-    }
-
-    public QuickQueueWriter openWrite() {
-        if (this.writer != null) {
-            throw new IllegalArgumentException("QuickQueueWriteIsOpened");
+        if (mode.equalsIgnoreCase("rw")) {
+            this.writer = new QuickQueueWriter(this);
+        } else {
+            this.writer = null;
         }
-        this.writer = new QuickQueueWriter(this);
-        return this.writer;
-    }
-
-    public QuickQueueWriter getWriter() {
-        return writer;
     }
 
     public QuickQueueWriter newMessage() {
-        return writer.newMessage();
+        try {
+            return writer.newMessage();
+        } catch (NullPointerException e) {
+            throw new UnsupportedOperationException("ReadonlyQuickQueue");
+        }
     }
 
     public QuickQueueReader createReader() {
@@ -53,12 +40,9 @@ public class QuickQueue {
         writer.force();
     }
 
-    public void close() {
-        QuickQueueWriter writer_ = this.writer;
-        this.writer = null;
-        if (writer_ != null) {
-            writer_.force();
-            writer_.close();
+    public void clean() {
+        if (this.writer != null) {
+            this.writer.clean();
         }
     }
 

@@ -29,17 +29,16 @@ public class QuickQueueTest {
     public void name() throws IOException {
         File file = new File("tmp/t1");
         FileUtils.clean(file);
-        QuickQueue quickQueue = new QuickQueue(file);
+        QuickQueue quickQueue = new QuickQueue(file, "rw");
         {
-            QuickQueueWriter writer = quickQueue.openWrite();
             for (int i = 0; i < 256; i++) {
-                long l = writer.newMessage()
+                long l = quickQueue.newMessage()
                         .packInt(i)
                         .writeMessage();
                 System.out.println(l);
             }
             System.out.println("=============");
-            quickQueue.close();
+            quickQueue.clean();
         }
 
 
@@ -56,7 +55,7 @@ public class QuickQueueTest {
     public void name3() throws IOException, InterruptedException {
         File file = new File("tmp/t1");
         FileUtils.clean(file);
-        QuickQueue quickQueue = new QuickQueue(file);
+        QuickQueue quickQueue = new QuickQueue(file, "rw");
         int dom = 10000000;
         new Thread(() -> {
             QuickQueueReader reader = quickQueue.createReader();
@@ -79,10 +78,9 @@ public class QuickQueueTest {
                 file.notifyAll();
             }
         }).start();
-        QuickQueueWriter writer = quickQueue.openWrite();
         long s1 = System.currentTimeMillis();
         for (int i = 0; i <= dom; i++) {
-            long l = writer.newMessage()
+            long l = quickQueue.newMessage()
                     .packInt(i)
                     .writeMessage();
         }
@@ -159,7 +157,7 @@ public class QuickQueueTest {
     public void name41b1() throws InterruptedException, IOException {
         File file = new File("tmp/t1");
         FileUtils.clean(file);
-        QuickQueue quickQueue = new QuickQueue(file);
+        QuickQueue quickQueue = new QuickQueue(file, "rw");
         int dom = 10000000;
         new Thread(() -> {
             QuickQueueReader reader = quickQueue.createReader();
@@ -172,9 +170,8 @@ public class QuickQueueTest {
                 System.out.println((double) (System.nanoTime() - (x.unpackLong())) / 1000);
             }
         }).start();
-        QuickQueueWriter writer = quickQueue.openWrite();
         for (int i = 0; i <= dom; i++) {
-            long l = writer.newMessage()
+            long l = quickQueue.newMessage()
                     .packLong(System.nanoTime())
                     .writeMessage();
             Thread.sleep(300);

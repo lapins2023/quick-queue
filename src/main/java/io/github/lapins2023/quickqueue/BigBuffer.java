@@ -77,7 +77,7 @@ public class BigBuffer {
         } catch (NullPointerException e) {
             throw new UnsupportedOperationException("CurrPageNotOpen");
         }
-        return cOffset(page, curr.position());
+        return cOffset(page, curr.buffer.position());
     }
 
 
@@ -279,15 +279,15 @@ public class BigBuffer {
 
 
     //只提供byte的原子操作
-    public byte markGet(long skip) {
+    public byte markGet(long seek) {
         long currOffset;
         try {
             currOffset = offset();
         } catch (UnsupportedOperationException e) {
             offset(0);
-            return markGet(skip);
+            return markGet(seek);
         }
-        long offset = currOffset + skip;
+        long offset = currOffset + seek;
         int pos = (int) offset & pageMaxPos;
         int page = (int) (offset >> pageBitSize);
         markPageBuff = getPageBuffer(page);
@@ -314,6 +314,9 @@ public class BigBuffer {
         if (markPageBuff != null) {
             ((DirectBuffer) markPageBuff.buffer).cleaner().clean();
         }
+        curr = null;
+        markPageBuff = null;
+        markPos = 0;
     }
 
 

@@ -163,7 +163,7 @@ public class QuickQueueWriter {
         return off;
     }
 
-    public void close() {
+    public void clean() {
         force();
         index.clean();
         data.clean();
