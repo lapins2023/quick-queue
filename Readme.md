@@ -29,7 +29,7 @@ Quick-Queue是一个Java进程内高性能，低延迟，零拷贝，持久化�
     for (int i = 0; i < 10; i++) {
         long offset = writer.newMessage()
                 .packInt(i)
-                .packBigDecimal(BigDecimal.valueOf(i)) //BigDecimal使用二进制序列化的方式，如需要跨语言可以使用String类型或Decimal128
+                .packBigDecimal(BigDecimal.valueOf(i)) //BigDecimal使用二进制序列化的方式
                 .packString(String.valueOf(i)) //// packString只支持ascii，如果需要存储Unicode如中文请使用packUnicode
                 .packBoolean(i % 2 == 0)
                 .writeMessage(); //调用writeMessage进行消息写入
@@ -324,7 +324,7 @@ long offset = quickQueueProducerSelf.newMessage()
 }
 ```
 
-## 结构详解
+## 详解
 
 实现思路借鉴非连续内存中的页式管理。利用MMap进行分页，使用 页号+位移量 组成连续的逻辑地址。
 
@@ -348,6 +348,13 @@ dataDir:
 
 dataBeginOffset(long) | (messageSize(4字节) 保留段(3字节) 结束标识(1字节))
 offset 组成为 (page << pageBitSize) + pos
+```
+
+BigDecimal序列化
+```
+组成: (标识)(1字节) | scale | byteArrayLength| unscaledValueBigIntegerByteArray
+当 scale 和 byteArrayLength 均小于128时: 标识符为0 scale和byteArrayLength 各占用1个字节
+否则: 标识符为1 scale和byteArrayLength 各占用4个字节
 ```
 
 ## Pro版本功能

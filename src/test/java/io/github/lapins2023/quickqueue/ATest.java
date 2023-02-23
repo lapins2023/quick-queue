@@ -4,24 +4,24 @@ import org.junit.Test;
 import sun.misc.Unsafe;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.math.MathContext;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 
 public class ATest {
 
 
     @Test
     public void restartable3b() {
-        BigDecimal x = new BigDecimal("10000.001");
-        int b = 0;
-        long l = System.currentTimeMillis();
-        for (int i = 0; i < 1000000; i++) {
-            b += x.scale();
-            b += x.unscaledValue().toByteArray().length;
-        }
-        System.out.println(System.currentTimeMillis() - l);
-        System.out.println(b);
+        BigInteger bigInteger = BigInteger.valueOf(Long.MAX_VALUE);
+        System.out.println(bigInteger.shiftLeft(64));
+        System.out.println(Long.MAX_VALUE);
+        System.out.println(Integer.toBinaryString(Integer.MAX_VALUE));
+//        System.out.println(Integer.toBinaryString(Byte.MAX_VALUE));
+//        System.out.println(Integer.toBinaryString(Byte.MIN_VALUE));
+//        System.out.println(Integer.toBinaryString(Byte.toUnsignedInt(Byte.MAX_VALUE)));
     }
 
     @Test
