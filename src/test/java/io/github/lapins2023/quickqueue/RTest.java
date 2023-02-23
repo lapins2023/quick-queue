@@ -15,14 +15,13 @@ public class RTest {
         File file = new File("tmp/t1");
 //        Files.delete(file.toPath());
 //        Files.createDirectory(file.toPath());
-        quickQueue = new QuickQueue(file);
+        quickQueue = new QuickQueue(file,"rw");
     }
 
     @Test
     public void t1() {
-        WriterSingle writer = quickQueue.openWrite();
         for (int i = 0; i < 10; i++) {
-            long offset = writer.newMessage()
+            long offset = quickQueue.newMessage()
                     .packInt(i)
                     .packBigDecimal(BigDecimal.valueOf(i)) //BigDecimal使用二进制序列化的方式，如需要跨语言可以使用String类型或BJSON Decimal128
                     .packString(String.valueOf(i)) //// packString只支持ascii，如果需要存储Unicode如中文请使用packUnicode

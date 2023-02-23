@@ -107,7 +107,7 @@ public abstract class QuickQueueWriter {
         return this;
     }
 
-    public long writeMessage() {
+    public final long writeMessage() {
         int length = Math.toIntExact((data.offset() - begin));
         return writeMessage0(length);
     }
@@ -116,7 +116,7 @@ public abstract class QuickQueueWriter {
 
     public abstract void force0();
 
-    public void force() {
+    public final void force() {
         data.force();
         force0();
     }

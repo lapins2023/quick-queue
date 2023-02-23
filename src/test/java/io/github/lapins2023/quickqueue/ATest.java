@@ -3,24 +3,26 @@ package io.github.lapins2023.quickqueue;
 import org.junit.Test;
 import sun.misc.Unsafe;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.math.MathContext;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.channels.FileChannel;
 import java.util.Arrays;
 
 public class ATest {
 
 
     @Test
-    public void restartable3b() {
-        BigInteger bigInteger = BigInteger.valueOf(Long.MAX_VALUE);
-        System.out.println(bigInteger.shiftLeft(64));
-        System.out.println(Long.MAX_VALUE);
-        System.out.println(Integer.toBinaryString(Integer.MAX_VALUE));
+    public void restartable3b() throws IOException {
+        File file = new File("tmp/a");
+        ByteBuffer allocate = ByteBuffer.allocate(8);
+        new RandomAccessFile(file, "rw").getChannel().read(allocate);
+        System.out.println(Arrays.toString(allocate.array()));
+
 //        System.out.println(Integer.toBinaryString(Byte.MAX_VALUE));
 //        System.out.println(Integer.toBinaryString(Byte.MIN_VALUE));
 //        System.out.println(Integer.toBinaryString(Byte.toUnsignedInt(Byte.MAX_VALUE)));

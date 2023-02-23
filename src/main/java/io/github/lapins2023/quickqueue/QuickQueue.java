@@ -2,6 +2,7 @@ package io.github.lapins2023.quickqueue;
 
 
 import java.io.File;
+import java.nio.ReadOnlyBufferException;
 
 public class QuickQueue {
     final File dir;
@@ -26,7 +27,7 @@ public class QuickQueue {
         try {
             return writer.newMessage();
         } catch (NullPointerException e) {
-            throw new UnsupportedOperationException("ReadonlyQuickQueue");
+            throw new ReadOnlyBufferException();
         }
     }
 
@@ -35,7 +36,7 @@ public class QuickQueue {
         try {
             writer.force();
         } catch (NullPointerException e) {
-            throw new UnsupportedOperationException("ReadonlyQuickQueue");
+            throw new ReadOnlyBufferException();
         }
     }
 

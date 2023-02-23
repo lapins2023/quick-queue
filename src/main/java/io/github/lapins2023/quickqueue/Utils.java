@@ -1,13 +1,15 @@
 package io.github.lapins2023.quickqueue;
 
 import sun.misc.Unsafe;
+import sun.nio.ch.DirectBuffer;
 
+import java.io.File;
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.MappedByteBuffer;
 import java.security.AccessController;
 import java.security.PrivilegedExceptionAction;
+import java.util.function.Function;
 
 abstract class Utils {
     static final int ONE_KB = 1024;
@@ -63,19 +65,37 @@ abstract class Utils {
     }
 
 
-    static long getAddress(ByteBuffer buffer) {
-        try {
-            Method address = buffer.getClass().getMethod("address");
-            address.setAccessible(true);
-            return (long) address.invoke(buffer);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+    static long getAddress(MappedByteBuffer buffer) {
+        return ((DirectBuffer) buffer).address();
     }
 
     static void assertMode(String mode) {
         if (!(mode.equalsIgnoreCase("r") || mode.equalsIgnoreCase("rw")))
             throw new IllegalArgumentException("mode must r,rw");
+    }
+
+    public static long getLastIx(File dir) {
+        BigBuffer r = new BigBuffer("r", Utils.PAGE_SIZE, dir, "", Utils.INDEX_EXT);
+        long lastIx = -1;
+        long size = r.size();
+        if (size > 0) {
+            long start = size - Utils.PAGE_SIZE;
+            Function<Integer, Boolean> flag =
+                    n -> r.offset(start + (n << 4) + Utils.FLAG_OFF).get() == Utils.FLAG;
+            int left = 0;
+            int right = (Utils.PAGE_SIZE >> 4) - 1;
+            while (left <= right) {
+                int mid = left + ((right - left) >> 1);
+                if (flag.apply(mid)) {
+                    lastIx = start + ((long) mid << 4);
+                    left = mid + 1;
+                } else {
+                    right = mid - 1;
+                }
+            }
+        }
+        r.clean();
+        return lastIx;
     }
 
     static byte getByte(long address) {
@@ -84,5 +104,9 @@ abstract class Utils {
 
     static long getLong(long address) {
         return UNSAFE.getLong(address);
+    }
+
+    public static void putLong(long address, long v) {
+        UNSAFE.putLong(address, v);
     }
 }
