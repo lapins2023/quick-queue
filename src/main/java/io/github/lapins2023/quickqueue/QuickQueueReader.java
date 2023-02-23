@@ -8,8 +8,8 @@ public class QuickQueueReader implements AutoCloseable, Iterable<QuickQueueMessa
     private final BigBuffer data;
 
     QuickQueueReader(QuickQueue qkq) {
-        index = new BigBuffer("r", Utils.PAGE_SIZE, qkq.dataDir, "", Utils.INDEX_EXT);
-        data = new BigBuffer("r", Utils.PAGE_SIZE, qkq.dataDir, "", Utils.DATA_EXT);
+        index = new BigBuffer("r", Utils.PAGE_SIZE, qkq.dir, "", Utils.INDEX_EXT);
+        data = new BigBuffer("r", Utils.PAGE_SIZE, qkq.dir, "", Utils.DATA_EXT);
         message = new QuickQueueMessage(data);
     }
 

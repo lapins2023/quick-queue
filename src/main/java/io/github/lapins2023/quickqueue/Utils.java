@@ -73,9 +73,15 @@ abstract class Utils {
         }
     }
 
+    static void assertMode(String mode) {
+        if (!(mode.equalsIgnoreCase("r") || mode.equalsIgnoreCase("rw")))
+            throw new IllegalArgumentException("mode must r,rw");
+    }
+
     static byte getByte(long address) {
         return UNSAFE.getByte(address);
     }
+
     static long getLong(long address) {
         return UNSAFE.getLong(address);
     }

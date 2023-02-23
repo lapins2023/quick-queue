@@ -3,67 +3,19 @@ package io.github.lapins2023.quickqueue;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Objects;
-import java.util.function.Function;
 
-public class QuickQueueWriter {
+public abstract class QuickQueueWriter {
+    protected final BigBuffer data;
 
-    private final QuickQueue qkq;
-
-    private BigBuffer data;
-    //
-    private BigBuffer index;
-
-    QuickQueueWriter(QuickQueue qkq) {
-        this.qkq = qkq;
-        data = new BigBuffer("rw", Utils.PAGE_SIZE, qkq.dataDir, "", Utils.DATA_EXT);
-        open();
-    }
-
-    private void open() {
-        BigBuffer r = new BigBuffer("r", Utils.PAGE_SIZE, qkq.dataDir, "", Utils.INDEX_EXT);
-        long lastIx = -1;
-        long size = r.size();
-        if (size > 0) {
-            long start = size - Utils.PAGE_SIZE;
-            Function<Integer, Boolean> flag =
-                    n -> r.offset(start + (n << 4) + Utils.FLAG_OFF).get() == Utils.FLAG;
-            int left = 0;
-            int right = (Utils.PAGE_SIZE >> 4) - 1;
-            while (left <= right) {
-                int mid = left + ((right - left) >> 1);
-                if (flag.apply(mid)) {
-                    lastIx = start + ((long) mid << 4);
-                    left = mid + 1;
-                } else {
-                    right = mid - 1;
-                }
-            }
-        }
-        r.clean();
-        //////
-        index = new BigBuffer("rw", Utils.PAGE_SIZE, qkq.dataDir, "", Utils.INDEX_EXT);
-        data = new BigBuffer("rw", Utils.PAGE_SIZE, qkq.dataDir, "", Utils.DATA_EXT);
-        if (lastIx < 0) {
-            data.offset(0);
-            index.offset(0);
-        } else {
-            index.offset(lastIx);
-            long lastDataOffset = index.getLong();
-            int lastDataLength = index.getLongLowAddressInt();
-            data.offset(lastDataOffset + lastDataLength);
-        }
-    }
-
-    void force() {
-        data.force();
-        index.force();
-    }
-
-    long begin;
+    protected long begin;
 
     public QuickQueueWriter newMessage() {
         begin = data.offset();
         return this;
+    }
+
+    protected QuickQueueWriter(BigBuffer data) {
+        this.data = data;
     }
 
     public QuickQueueWriter packInt(int v) {
@@ -156,16 +108,16 @@ public class QuickQueueWriter {
     }
 
     public long writeMessage() {
-        long end = data.offset();
-        long off = index.offset();
-        index.putLong(begin)
-                .putLong(Math.toIntExact((end - begin)), Utils.FLAG);
-        return off;
+        int length = Math.toIntExact((data.offset() - begin));
+        return writeMessage0(length);
     }
 
-    public void clean() {
-        force();
-        index.clean();
-        data.clean();
+    protected abstract long writeMessage0(int length);
+
+    public abstract void force0();
+
+    public void force() {
+        data.force();
+        force0();
     }
 }

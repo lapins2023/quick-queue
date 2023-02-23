@@ -20,7 +20,7 @@ public class RTest {
 
     @Test
     public void t1() {
-        QuickQueueWriter writer = quickQueue.openWrite();
+        WriterSingle writer = quickQueue.openWrite();
         for (int i = 0; i < 10; i++) {
             long offset = writer.newMessage()
                     .packInt(i)

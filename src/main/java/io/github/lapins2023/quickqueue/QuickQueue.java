@@ -4,21 +4,19 @@ package io.github.lapins2023.quickqueue;
 import java.io.File;
 
 public class QuickQueue {
-    final File dataDir;
-    private final QuickQueueWriter writer;
+    final File dir;
+    private final WriterSingle writer;
 
-
-    public QuickQueue(File dataDir, String mode) {
-        if (!(mode.equalsIgnoreCase("r") || mode.equalsIgnoreCase("rw")))
-            throw new IllegalArgumentException("mode must r,rw");
-        this.dataDir = dataDir;
-        if (dataDir.exists()) {
-            if (dataDir.isFile()) throw new IllegalArgumentException("NotDirFileExists=" + dataDir);
+    public QuickQueue(File dir, String mode) {
+        Utils.assertMode(mode);
+        this.dir = dir;
+        if (dir.exists()) {
+            if (dir.isFile()) throw new IllegalArgumentException("NotDirFileExists=" + dir);
         } else {
-            if (!dataDir.mkdirs()) throw new IllegalArgumentException("UnableMkdir=" + dataDir);
+            if (!dir.mkdirs()) throw new IllegalArgumentException("UnableMkdir=" + dir);
         }
         if (mode.equalsIgnoreCase("rw")) {
-            this.writer = new QuickQueueWriter(this);
+            this.writer = new WriterSingle(this);
         } else {
             this.writer = null;
         }
@@ -32,13 +30,15 @@ public class QuickQueue {
         }
     }
 
-    public QuickQueueReader createReader() {
-        return new QuickQueueReader(this);
-    }
 
     public void force() {
-        writer.force();
+        try {
+            writer.force();
+        } catch (NullPointerException e) {
+            throw new UnsupportedOperationException("ReadonlyQuickQueue");
+        }
     }
+
 
     public void clean() {
         if (this.writer != null) {
@@ -46,12 +46,15 @@ public class QuickQueue {
         }
     }
 
+    public QuickQueueReader createReader() {
+        return new QuickQueueReader(this);
+    }
 
     //////////////////
     //////////////////
     //////////////////
     //////////////////
     public String getPath() {
-        return dataDir.getAbsolutePath();
+        return dir.getAbsolutePath();
     }
 }

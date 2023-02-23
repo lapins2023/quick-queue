@@ -26,8 +26,7 @@ public class BigBuffer {
     private final String mode;
 
     public BigBuffer(String mode, int pageSize, File dir, String fileNamePrefix, String fileNameSuffix) {
-        if (!("rw".equalsIgnoreCase(mode) || "r".equalsIgnoreCase(mode)))
-            throw new IllegalArgumentException("Illegal mode=" + mode);
+        Utils.assertMode(mode);
         this.pageSize = pageSize;
         pageMaxPos = this.pageSize - 1;
         if ((this.pageSize & pageMaxPos) != 0) {
