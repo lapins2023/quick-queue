@@ -3,21 +3,27 @@ package io.github.lapins2023.quickqueue;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.file.Files;
-import java.util.RandomAccess;
 
 public class FileUtils {
+    public static File empty(String temp) throws IOException {
+        File file = new File("tmp/" + temp);
+        clean(file);
+        return file;
+    }
+
     public static void clean(File dir) throws IOException {
         if (!dir.exists()) {
             dir.mkdirs();
             return;
         }
         for (File file : dir.listFiles()) {
+            if (file.isDirectory()) {
+                clean(file);
+            }
             assert file.delete();
         }
     }

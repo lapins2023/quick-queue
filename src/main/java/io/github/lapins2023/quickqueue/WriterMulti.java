@@ -13,10 +13,10 @@ class WriterMulti extends QuickQueueWriter {
     final long mpoA;
 
     public WriterMulti(QuickQueueMulti qkq) {
-        super(new BigBuffer("rw", Utils.PAGE_SIZE, new File(qkq.dir, qkq.name), "", Utils.DATA_EXT));
+        super(new BigBuffer("rw", Utils.PAGE_SIZE, Utils.mkdir(new File(qkq.dir, qkq.name)), "", Utils.DATA_EXT));
         this.index = new BigBuffer("rw", Utils.PAGE_SIZE, qkq.dir, "", Utils.INDEX_EXT);
         try {
-            try (RandomAccessFile rw = new RandomAccessFile(new File(qkq.dir, qkq.name + ".lk"), "rw")) {
+            try (RandomAccessFile rw = new RandomAccessFile(new File(qkq.dir, qkq.name + ".LK"), "rw")) {
                 this.mpoC = rw.getChannel();
                 mpoC.lock();
                 this.mpoM = (MappedByteBuffer) mpoC.map(FileChannel.MapMode.READ_WRITE, 0, 16).order(Utils.NativeByteOrder);
@@ -46,8 +46,9 @@ class WriterMulti extends QuickQueueWriter {
 
     @Override
     public long writeMessage0(int length) {
-        return index.atomAppend(begin, Utils.toLong(length, b1, b2, b3, (byte) 0), Utils.FLAG)
-                .offset() - 16;
+        Utils.putLong(mpoA, data.offset());
+        index.atomAppend(begin, Utils.toLong(length, b1, b2, b3, (byte) 0), Utils.FLAG);
+        return index.offset() - Utils.IX_MSG_LEN;
     }
 
     public void close() {

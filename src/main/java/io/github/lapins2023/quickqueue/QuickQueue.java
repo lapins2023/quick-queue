@@ -10,12 +10,7 @@ public class QuickQueue {
 
     public QuickQueue(File dir, String mode) {
         Utils.assertMode(mode);
-        this.dir = dir;
-        if (dir.exists()) {
-            if (dir.isFile()) throw new IllegalArgumentException("NotDirFileExists=" + dir);
-        } else {
-            if (!dir.mkdirs()) throw new IllegalArgumentException("UnableMkdir=" + dir);
-        }
+        this.dir = Utils.mkdir(dir);
         if (mode.equalsIgnoreCase("rw")) {
             this.writer = new WriterSingle(this);
         } else {

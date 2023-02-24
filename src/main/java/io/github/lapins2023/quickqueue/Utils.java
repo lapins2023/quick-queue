@@ -130,4 +130,13 @@ abstract class Utils {
     public static int getLongLowInt(long l) {
         return (int) (Utils.NativeByteOrderBigEndian ? l >> INT_SZ : l);
     }
+
+    public static File mkdir(File dir) {
+        if (dir.exists()) {
+            if (dir.isFile()) throw new IllegalArgumentException("NotDirFileExists=" + dir);
+        } else {
+            if (!dir.mkdirs()) throw new IllegalArgumentException("UnableMkdir=" + dir);
+        }
+        return dir;
+    }
 }
