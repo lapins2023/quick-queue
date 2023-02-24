@@ -243,16 +243,24 @@ public class BigBuffer {
         }
     }
 
-    public BigBuffer putLong(int lowInt, byte highestByte) {
-        long l = Utils.NativeByteOrderBigEndian ? ((long) lowInt << 32) + highestByte : ((long) highestByte << (64 - 8)) + lowInt;
-        return putLong(l);
-    }
-
-    public BigBuffer putLong(int lowInt, byte h1B, byte h2B, byte h3B, byte h4B) {
-        long l = Utils.NativeByteOrderBigEndian ?
-                ((long) lowInt << 32) + ((long) h1B << (32 - 8)) + ((long) h2B << (32 - 8 * 2)) + ((long) h3B << (32 - 8 * 3)) + h4B
-                : ((long) h4B << (64 - 8)) + ((long) h3B << (64 - 8 * 2)) + ((long) h2B << (64 - 8 * 3)) + ((long) h1B << (64 - 8 * 4)) + lowInt;
-        return putLong(l);
+    public long atomAppend(long l1, long atomLong, byte flag) {
+        while (true) {
+            long offset = offset();
+            if (curr.buffer.remaining() >= 16) {
+                if (Utils.UNSAFE.compareAndSwapLong(null, curr.address + curr.buffer.position() + 8, 0, atomLong)) {
+                    curr.buffer.putLong(l1);
+                    curr.skip(8 - 1);
+                    curr.buffer.put(flag);
+                    return offset - 16;
+                }
+                offset(offset + 16);
+            } else if (curr.buffer.remaining() == 0) {
+                offset(offset);
+                continue;
+            } else {
+                throw new UnsupportedOperationException();
+            }
+        }
     }
 
     public int getLongLowAddressInt() {
@@ -334,4 +342,5 @@ public class BigBuffer {
     public String toString() {
         return "BigBuffer{" + "curr=" + curr + '}';
     }
+
 }

@@ -27,7 +27,7 @@ class WriterSingle extends QuickQueueWriter {
     protected long writeMessage0(int length) {
         long offset = index.offset();
         index.putLong(begin)
-                .putLong(length, Utils.FLAG);
+                .putLong(Utils.toLong(length, Utils.FLAG));
         return offset;
     }
 

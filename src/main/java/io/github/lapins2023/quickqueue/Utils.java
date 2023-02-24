@@ -109,4 +109,16 @@ abstract class Utils {
     public static void putLong(long address, long v) {
         UNSAFE.putLong(address, v);
     }
+
+    public static long toLong(int lowInt, byte highestByte) {
+        return NativeByteOrderBigEndian
+                ? ((long) lowInt << 32) + highestByte
+                : ((long) highestByte << (64 - 8)) + lowInt;
+    }
+
+    public static long toLong(int lowInt, byte h1B, byte h2B, byte h3B, byte h4B) {
+        return NativeByteOrderBigEndian ?
+                ((long) lowInt << 32) + ((long) h1B << (32 - 8)) + ((long) h2B << (32 - 8 * 2)) + ((long) h3B << (32 - 8 * 3)) + h4B
+                : ((long) h4B << (64 - 8)) + ((long) h3B << (64 - 8 * 2)) + ((long) h2B << (64 - 8 * 3)) + ((long) h1B << (64 - 8 * 4)) + lowInt;
+    }
 }

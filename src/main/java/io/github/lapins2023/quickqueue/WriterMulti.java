@@ -8,24 +8,24 @@ import java.nio.channels.FileChannel;
 
 class WriterMulti extends QuickQueueWriter {
     final BigBuffer index;
-    final FileChannel lk;
-    final MappedByteBuffer lkBuffer;
-    final long lkBuffAddress;
-    private final long ixAddress;
+    final FileChannel mpoC;
+    final MappedByteBuffer mpoM;
+    final long mpoA;
 
     public WriterMulti(QuickQueueMulti qkq) {
         super(new BigBuffer("rw", Utils.PAGE_SIZE, new File(qkq.dir, qkq.name), "", Utils.DATA_EXT));
         this.index = new BigBuffer("rw", Utils.PAGE_SIZE, qkq.dir, "", Utils.INDEX_EXT);
-        ixAddress = qkq.ixAddress;
         try {
             try (RandomAccessFile rw = new RandomAccessFile(new File(qkq.dir, qkq.name + ".lk"), "rw")) {
-                this.lk = rw.getChannel();
-                lk.lock();
-                this.lkBuffer = (MappedByteBuffer) lk.map(FileChannel.MapMode.READ_WRITE, 0, 8).order(Utils.NativeByteOrder);
-                this.lkBuffAddress = Utils.getAddress(this.lkBuffer);
-                long dataEnding = Utils.getLong(lkBuffAddress);
+                this.mpoC = rw.getChannel();
+                mpoC.lock();
+                this.mpoM = (MappedByteBuffer) mpoC.map(FileChannel.MapMode.READ_WRITE, 0, 16).order(Utils.NativeByteOrder);
+                this.mpoA = Utils.getAddress(this.mpoM);
+                long dataEnding = Utils.getLong(mpoA);
                 data.offset(dataEnding);
             }
+            long lastIx = Utils.getLastIx(qkq.dir);
+            index.offset(lastIx < 0 ? 0 : lastIx + 16);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -36,7 +36,7 @@ class WriterMulti extends QuickQueueWriter {
 
     @Override
     public void force0() {
-        lkBuffer.force();
+        mpoM.force();
         index.force();
     }
 
@@ -46,22 +46,20 @@ class WriterMulti extends QuickQueueWriter {
 
     @Override
     public long writeMessage0(int length) {
-        if (length > 0) {
-            Utils.putLong(lkBuffAddress, data.offset());
-            long offset = Utils.UNSAFE.getAndAddLong(null, ixAddress, 16);
-            index.offset(offset);
-            index.putLong(begin)
-                    .putLong(length, n1, n2, n3, Utils.FLAG);
-            return offset;
-        } else {
-            return begin;
+        while (true) {
+            index.atomAppend( begin, Utils.toLong(length, n1, n2, n3, (byte) 0), Utils.FLAG);
         }
+//        Utils.putLong(mpoA, data.offset());
+//        Utils.putLong(mpoA + 8, offset);
+//        long offset_ = offset;
+//        offset = offset + 16;
+        return offset_;
     }
 
     public void close() {
         force();
         try {
-            lk.close();
+            mpoC.close();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
