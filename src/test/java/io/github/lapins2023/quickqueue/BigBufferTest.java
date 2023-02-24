@@ -33,7 +33,7 @@ public class BigBufferTest {
         File dir = new File("tmp/qkq/t1");
         FileUtils.clean(dir);
         BigBuffer bigBuffer = new BigBuffer("rw", size, dir, "d-", ".d");
-        BigBuffer bigBuffer1 = bigBuffer.putLong(1, (byte) 1);
+        BigBuffer bigBuffer1 = bigBuffer.putLong( (byte) 1);
     }
 
     @Test

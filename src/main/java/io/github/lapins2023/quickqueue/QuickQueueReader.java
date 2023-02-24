@@ -44,7 +44,7 @@ public class QuickQueueReader implements AutoCloseable, Iterable<QuickQueueMessa
         if (b == Utils.FLAG) {
             long offset = index.offset();
             long dataOffset = index.getLong();
-            long len = index.getLongLowAddressInt();
+            long len = Utils.getLongLowInt(index.getLong());
             mark = false;
             return message.reset(offset, dataOffset, len);
         } else {

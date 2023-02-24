@@ -20,7 +20,8 @@ abstract class Utils {
     final static String DATA_EXT = ".qd";
     final static String INDEX_EXT = ".qx";
     final static byte FLAG = 127;
-    final static int FLAG_OFF = (1 << 4) - 1;
+    final static int IX_MSG_LEN = (1 << 4);
+    final static int FLAG_OFF = IX_MSG_LEN - 1;
 
 
     final static int PAGE_SIZE = Integer.parseInt(System.getProperty("QKQPsz", String.valueOf(ONE_GB)));
@@ -110,15 +111,23 @@ abstract class Utils {
         UNSAFE.putLong(address, v);
     }
 
+    private final static int INT_SZ = Integer.SIZE;
+    private final static int LONG_SZ = Long.SIZE;
+    private final static int B_SZ = Byte.SIZE;
+
     public static long toLong(int lowInt, byte highestByte) {
         return NativeByteOrderBigEndian
-                ? ((long) lowInt << 32) + highestByte
-                : ((long) highestByte << (64 - 8)) + lowInt;
+                ? ((long) lowInt << INT_SZ) + highestByte
+                : ((long) highestByte << (LONG_SZ - B_SZ)) + lowInt;
     }
 
     public static long toLong(int lowInt, byte h1B, byte h2B, byte h3B, byte h4B) {
         return NativeByteOrderBigEndian ?
-                ((long) lowInt << 32) + ((long) h1B << (32 - 8)) + ((long) h2B << (32 - 8 * 2)) + ((long) h3B << (32 - 8 * 3)) + h4B
-                : ((long) h4B << (64 - 8)) + ((long) h3B << (64 - 8 * 2)) + ((long) h2B << (64 - 8 * 3)) + ((long) h1B << (64 - 8 * 4)) + lowInt;
+                ((long) lowInt << INT_SZ) + ((long) h1B << (INT_SZ - B_SZ)) + ((long) h2B << (INT_SZ - (B_SZ * 2))) + ((long) h3B << (INT_SZ - (B_SZ * 3))) + h4B
+                : ((long) h4B << (LONG_SZ - B_SZ)) + ((long) h3B << (LONG_SZ - B_SZ * 2)) + ((long) h2B << (LONG_SZ - B_SZ * 3)) + ((long) h1B << (LONG_SZ - B_SZ * 4)) + lowInt;
+    }
+
+    public static int getLongLowInt(long l) {
+        return (int) (Utils.NativeByteOrderBigEndian ? l >> INT_SZ : l);
     }
 }

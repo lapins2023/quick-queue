@@ -29,9 +29,9 @@ class WriterMulti extends QuickQueueWriter {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        n1 = (byte) qkq.name.charAt(0);
-        n2 = (byte) qkq.name.charAt(1);
-        n3 = (byte) qkq.name.charAt(2);
+        b1 = (byte) qkq.name.charAt(0);
+        b2 = (byte) qkq.name.charAt(1);
+        b3 = (byte) qkq.name.charAt(2);
     }
 
     @Override
@@ -40,20 +40,14 @@ class WriterMulti extends QuickQueueWriter {
         index.force();
     }
 
-    private final byte n1;
-    private final byte n2;
-    private final byte n3;
+    private final byte b1;
+    private final byte b2;
+    private final byte b3;
 
     @Override
     public long writeMessage0(int length) {
-        while (true) {
-            index.atomAppend( begin, Utils.toLong(length, n1, n2, n3, (byte) 0), Utils.FLAG);
-        }
-//        Utils.putLong(mpoA, data.offset());
-//        Utils.putLong(mpoA + 8, offset);
-//        long offset_ = offset;
-//        offset = offset + 16;
-        return offset_;
+        return index.atomAppend(begin, Utils.toLong(length, b1, b2, b3, (byte) 0), Utils.FLAG)
+                .offset() - 16;
     }
 
     public void close() {

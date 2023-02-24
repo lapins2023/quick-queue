@@ -243,7 +243,7 @@ public class BigBuffer {
         }
     }
 
-    public long atomAppend(long l1, long atomLong, byte flag) {
+    public BigBuffer atomAppend(long l1, long atomLong, byte flag) {
         while (true) {
             long offset = offset();
             if (curr.buffer.remaining() >= 16) {
@@ -251,21 +251,15 @@ public class BigBuffer {
                     curr.buffer.putLong(l1);
                     curr.skip(8 - 1);
                     curr.buffer.put(flag);
-                    return offset - 16;
+                    return this;
                 }
                 offset(offset + 16);
             } else if (curr.buffer.remaining() == 0) {
                 offset(offset);
-                continue;
             } else {
                 throw new UnsupportedOperationException();
             }
         }
-    }
-
-    public int getLongLowAddressInt() {
-        long l = getLong();
-        return (int) (Utils.NativeByteOrderBigEndian ? l >> 32 : l);
     }
 
     public BigBuffer put(byte v) {
