@@ -165,7 +165,6 @@ abstract class Utils {
     }
 
     public static int bInt(byte b0, byte b1, byte b2, byte b3) {
-        ByteBuffer.allocate().getInt()
         return ((int) b0 << (INT_SZ - B_SZ)) + ((int) b1 << (INT_SZ - (B_SZ * 2))) + ((int) b2 << (INT_SZ - (B_SZ * 3))) + b3;
     }
 }
