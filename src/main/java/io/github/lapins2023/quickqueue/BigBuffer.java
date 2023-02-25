@@ -243,7 +243,7 @@ public class BigBuffer {
         }
     }
 
-    public BigBuffer atomAppend(long l1, long atomLong, byte flag) {
+    public boolean atomAppend(long l1, long atomLong, byte flag) {
         while (true) {
             long offset = offset();
             if (curr.buffer.remaining() >= 16) {
@@ -251,13 +251,13 @@ public class BigBuffer {
                     curr.buffer.putLong(l1);
                     curr.skip(8 - 1);
                     curr.buffer.put(flag);
-                    return this;
+                    return true;
                 }
                 offset(offset + 16);
             } else if (curr.buffer.remaining() == 0) {
                 offset(offset);
             } else {
-                throw new UnsupportedOperationException();
+                return false;
             }
         }
     }

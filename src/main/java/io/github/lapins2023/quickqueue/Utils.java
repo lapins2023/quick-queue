@@ -142,6 +142,12 @@ abstract class Utils {
                 : ((long) h4B << (LONG_SZ - B_SZ)) + ((long) h3B << (LONG_SZ - B_SZ * 2)) + ((long) h2B << (LONG_SZ - B_SZ * 3)) + ((long) h1B << (LONG_SZ - B_SZ * 4)) + lowInt;
     }
 
+    public static long toLong(int lowInt, int mpn, byte b) {
+        return NativeByteOrderBigEndian ?
+                ((long) lowInt << INT_SZ) + ((long) mpn << B_SZ) + b
+                : ((long) b << (LONG_SZ - B_SZ)) + ((long) mpn << (INT_SZ)) + lowInt;
+    }
+
     public static int getLongLowInt(long l) {
         return (int) (Utils.NativeByteOrderBigEndian ? l >> INT_SZ : l);
     }
@@ -164,7 +170,11 @@ abstract class Utils {
         return lInt >> B_SZ;
     }
 
-    public static int bInt(byte b0, byte b1, byte b2, byte b3) {
-        return ((int) b0 << (INT_SZ - B_SZ)) + ((int) b1 << (INT_SZ - (B_SZ * 2))) + ((int) b2 << (INT_SZ - (B_SZ * 3))) + b3;
+
+    static int toInt(byte b3, byte b2, byte b1, byte b0) {
+        return (((b3) << 24) |
+                ((b2 & 0xff) << 16) |
+                ((b1 & 0xff) << 8) |
+                ((b0 & 0xff)));
     }
 }

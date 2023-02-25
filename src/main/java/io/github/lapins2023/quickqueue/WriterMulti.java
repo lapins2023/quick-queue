@@ -10,34 +10,39 @@ class WriterMulti extends QuickQueueWriter {
     final BigBuffer index;
     final FileChannel mpoC;
     final MappedByteBuffer mpoM;
-    final long mpoA;
+    final long mpoA1;
     private final long mpoAIx;
+    private final long mpoA2;
+    private final int mpn;
 
     public WriterMulti(QuickQueueMulti qkq) {
         super(new BigBuffer("rw", Utils.PAGE_SIZE, Utils.mkdir(new File(qkq.dir, qkq.name)), "", Utils.DATA_EXT));
         this.index = new BigBuffer("rw", Utils.PAGE_SIZE, qkq.dir, "", Utils.INDEX_EXT);
-        b1 = (byte) qkq.name.charAt(0);
-        b2 = (byte) qkq.name.charAt(1);
-        b3 = (byte) qkq.name.charAt(2);
+        this.mpn = qkq.mpn;
         try {
-            try (RandomAccessFile rw = new RandomAccessFile(new File(qkq.dir, qkq.name + ".LK"), "rw")) {
+            try (RandomAccessFile rw = new RandomAccessFile(new File(qkq.dir, qkq.name + ".mp"), "rw")) {
                 this.mpoC = rw.getChannel();
                 mpoC.lock();
-                this.mpoM = (MappedByteBuffer) mpoC.map(FileChannel.MapMode.READ_WRITE, 0, 16).order(Utils.NativeByteOrder);
-                this.mpoA = Utils.getAddress(this.mpoM);
-                this.mpoAIx = mpoA + 8;
-                long dataEnding = Utils.getLong(mpoA);
+                this.mpoM = (MappedByteBuffer) mpoC.map(FileChannel.MapMode.READ_WRITE, 0, 32)
+                        .order(Utils.NativeByteOrder);
+                this.mpoA1 = Utils.getAddress(this.mpoM);
+                this.mpoA2 = mpoA1 + 8;
+                this.mpoAIx = mpoA2 + 8;
+                long dataEnding = Math.max(Utils.getLong(mpoA1), Utils.getLong(mpoA2));
                 data.offset(dataEnding);
             }
-            long latestIx = Utils.getLastIx(qkq.dir, false);
             long lastIx = Utils.getLong(mpoAIx);
             index.offset(lastIx);
-            long dataOffset = index.getLong();
+            index.getLong();
             long stamp = index.getLong();
-            if (!Utils.isFlag(stamp)) {
-                Utils.getMPN(stamp)
+            if (!Utils.isFlag(stamp) && Utils.getMPN(stamp) == qkq.mpn) {
+                //处理遗留写入
+                index.offset(lastIx);
+                index.putLong(Math.min(Utils.getLong(mpoA1), Utils.getLong(mpoA2)))
+                        .putLong(Utils.toLong((int) Math.abs(Utils.getLong(mpoA1) - Utils.getLong(mpoA2)), mpn, Utils.FLAG));
             }
-            index.offset(lastIx < 0 ? 0 : lastIx + 16);
+            long latestIx = Utils.getLastIx(qkq.dir, false);
+            index.offset(latestIx < 0 ? 0 : latestIx + 16);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -50,14 +55,11 @@ class WriterMulti extends QuickQueueWriter {
         index.force();
     }
 
-    private final byte b1;
-    private final byte b2;
-    private final byte b3;
 
     @Override
     public long writeMessage0(int length) {
-        Utils.putLong(mpoA, data.offset());
-        index.atomAppend(begin, Utils.toLong(length, b1, b2, b3, (byte) 0), Utils.FLAG);
+        Utils.putLong(mpoA1, data.offset());
+        index.atomAppend(begin, Utils.toLong(length, mpn, (byte) 0), Utils.FLAG);
         long l = index.offset() - Utils.IX_MSG_LEN;
         Utils.putLong(mpoAIx, l);
         return l;
