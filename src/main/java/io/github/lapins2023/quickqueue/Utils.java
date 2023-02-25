@@ -5,6 +5,8 @@ import sun.nio.ch.DirectBuffer;
 
 import java.io.File;
 import java.lang.reflect.Field;
+import java.nio.Buffer;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.security.AccessController;
@@ -75,14 +77,27 @@ abstract class Utils {
             throw new IllegalArgumentException("mode must r,rw");
     }
 
-    public static long getLastIx(File dir) {
+    public static long getLastIx(File dir, boolean onlyFlag) {
         BigBuffer r = new BigBuffer("r", Utils.PAGE_SIZE, dir, "", Utils.INDEX_EXT);
         long lastIx = -1;
         long size = r.size();
         if (size > 0) {
             long start = size - Utils.PAGE_SIZE;
             Function<Integer, Boolean> flag =
-                    n -> r.offset(start + (n << 4) + Utils.FLAG_OFF).get() == Utils.FLAG;
+                    n -> {
+                        if (r.offset(start + (n << 4) + Utils.FLAG_OFF).get() == Utils.FLAG) {
+                            return true;
+                        } else {
+                            if (onlyFlag) {
+                                return true;
+                            } else {
+                                r.offset(start + (n << 4));
+                                long l1 = r.getLong();
+                                long l2 = r.getLong();
+                                return l1 == 0 && l2 == 0;
+                            }
+                        }
+                    };
             int left = 0;
             int right = (Utils.PAGE_SIZE >> 4) - 1;
             while (left <= right) {
@@ -115,10 +130,10 @@ abstract class Utils {
     private final static int LONG_SZ = Long.SIZE;
     private final static int B_SZ = Byte.SIZE;
 
-    public static long toLong(int lowInt, byte highestByte) {
+    public static long toLong(int lowInt) {
         return NativeByteOrderBigEndian
-                ? ((long) lowInt << INT_SZ) + highestByte
-                : ((long) highestByte << (LONG_SZ - B_SZ)) + lowInt;
+                ? ((long) lowInt << INT_SZ) + Utils.FLAG
+                : (long) Utils.FLAG << (LONG_SZ - B_SZ) + lowInt;
     }
 
     public static long toLong(int lowInt, byte h1B, byte h2B, byte h3B, byte h4B) {
@@ -138,5 +153,19 @@ abstract class Utils {
             if (!dir.mkdirs()) throw new IllegalArgumentException("UnableMkdir=" + dir);
         }
         return dir;
+    }
+
+    public static boolean isFlag(long stamp) {
+        return ((byte) (NativeByteOrderBigEndian ? stamp : stamp >> LONG_SZ - B_SZ)) == FLAG;
+    }
+
+    public static int getMPN(long stamp) {
+        int lInt = (int) (NativeByteOrderBigEndian ? stamp : stamp >> INT_SZ);
+        return lInt >> B_SZ;
+    }
+
+    public static int bInt(byte b0, byte b1, byte b2, byte b3) {
+        ByteBuffer.allocate().getInt()
+        return ((int) b0 << (INT_SZ - B_SZ)) + ((int) b1 << (INT_SZ - (B_SZ * 2))) + ((int) b2 << (INT_SZ - (B_SZ * 3))) + b3;
     }
 }

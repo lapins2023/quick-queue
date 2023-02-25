@@ -5,13 +5,11 @@ import org.junit.Test;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import static org.junit.Assert.*;
-
 public class UtilsTest {
 
     @Test
     public void toLong() {
-        long l = Utils.toLong(126, (byte) 11);
+        long l = Utils.toLong(126);
         ByteBuffer allocate = ByteBuffer.allocate(8).order(Utils.NativeByteOrder);
         allocate.putLong(l);
         System.out.println(Arrays.toString(allocate.array()));

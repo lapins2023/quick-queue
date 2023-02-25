@@ -11,10 +11,11 @@ public class QuickQueueMultiTest {
         File dir = new File("tmp/t2");
         FileUtils.clean(dir);
         QuickQueueMulti quickQueueMulti = new QuickQueueMulti(dir, "rw", "Azz");
-        System.out.println(quickQueueMulti.newMessage()
-                .packInt(1)
-                .packInt(2)
-                .packInt(3)
-                .writeMessage());
+        for (int i = 0; i < 3; i++) {
+            System.out.println(quickQueueMulti.newMessage()
+                    .packInt(i)
+                    .writeMessage());
+        }
+
     }
 }
