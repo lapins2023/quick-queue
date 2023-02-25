@@ -5,8 +5,6 @@ import sun.nio.ch.DirectBuffer;
 
 import java.io.File;
 import java.lang.reflect.Field;
-import java.nio.Buffer;
-import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.security.AccessController;
@@ -19,8 +17,9 @@ abstract class Utils {
     static final int ONE_GB = ONE_KB * ONE_MB;
 
 
-    final static String DATA_EXT = ".qd";
-    final static String INDEX_EXT = ".qx";
+    final static String EXT_DATA = ".qd";
+    final static String EXT_INDEX = ".qx";
+    final static String EXT_MP = ".qm";
     final static byte FLAG = 127;
     final static int IX_MSG_LEN = (1 << 4);
     final static int FLAG_OFF = IX_MSG_LEN - 1;
@@ -78,31 +77,25 @@ abstract class Utils {
     }
 
     public static long getLastIx(File dir, boolean onlyFlag) {
-        BigBuffer r = new BigBuffer("r", Utils.PAGE_SIZE, dir, "", Utils.INDEX_EXT);
+        BigBuffer r = new BigBuffer("r", Utils.PAGE_SIZE, dir, "", Utils.EXT_INDEX);
         long lastIx = -1;
         long size = r.size();
         if (size > 0) {
             long start = size - Utils.PAGE_SIZE;
-            Function<Integer, Boolean> flag =
+            Function<Integer, Boolean> used =
                     n -> {
-                        if (r.offset(start + (n << 4) + Utils.FLAG_OFF).get() == Utils.FLAG) {
-                            return true;
+                        if (onlyFlag) {
+                            return r.offset(start + (n << 4) + Utils.FLAG_OFF).get() == Utils.FLAG;
                         } else {
-                            if (onlyFlag) {
-                                return true;
-                            } else {
-                                r.offset(start + (n << 4));
-                                long l1 = r.getLong();
-                                long l2 = r.getLong();
-                                return l1 == 0 && l2 == 0;
-                            }
+                            r.offset(start + (n << 4));
+                            return r.getLong() != 0 || r.getLong() != 0;
                         }
                     };
             int left = 0;
             int right = (Utils.PAGE_SIZE >> 4) - 1;
             while (left <= right) {
                 int mid = left + ((right - left) >> 1);
-                if (flag.apply(mid)) {
+                if (used.apply(mid)) {
                     lastIx = start + ((long) mid << 4);
                     left = mid + 1;
                 } else {
@@ -126,26 +119,21 @@ abstract class Utils {
         UNSAFE.putLong(address, v);
     }
 
-    private final static int INT_SZ = Integer.SIZE;
-    private final static int LONG_SZ = Long.SIZE;
-    private final static int B_SZ = Byte.SIZE;
+    final static int INT_SZ = Integer.SIZE;
+    final static int LONG_SZ = Long.SIZE;
+    final static int B_SZ = Byte.SIZE;
 
-    public static long toLong(int lowInt) {
+    public static long toStamp(int length) {
         return NativeByteOrderBigEndian
-                ? ((long) lowInt << INT_SZ) + Utils.FLAG
-                : (long) Utils.FLAG << (LONG_SZ - B_SZ) + lowInt;
+                ? ((long) length << INT_SZ) + Utils.FLAG
+                : (long) Utils.FLAG << (LONG_SZ - B_SZ) + length;
     }
 
-    public static long toLong(int lowInt, byte h1B, byte h2B, byte h3B, byte h4B) {
-        return NativeByteOrderBigEndian ?
-                ((long) lowInt << INT_SZ) + ((long) h1B << (INT_SZ - B_SZ)) + ((long) h2B << (INT_SZ - (B_SZ * 2))) + ((long) h3B << (INT_SZ - (B_SZ * 3))) + h4B
-                : ((long) h4B << (LONG_SZ - B_SZ)) + ((long) h3B << (LONG_SZ - B_SZ * 2)) + ((long) h2B << (LONG_SZ - B_SZ * 3)) + ((long) h1B << (LONG_SZ - B_SZ * 4)) + lowInt;
-    }
 
-    public static long toLong(int lowInt, int mpn, byte b) {
+    public static long toStamp(int length, int mpn, byte b) {
         return NativeByteOrderBigEndian ?
-                ((long) lowInt << INT_SZ) + ((long) mpn << B_SZ) + b
-                : ((long) b << (LONG_SZ - B_SZ)) + ((long) mpn << (INT_SZ)) + lowInt;
+                ((long) length << INT_SZ) + ((long) mpn << B_SZ) + b
+                : ((long) b << (LONG_SZ - B_SZ)) + ((long) mpn << (INT_SZ)) + length;
     }
 
     public static int getLongLowInt(long l) {

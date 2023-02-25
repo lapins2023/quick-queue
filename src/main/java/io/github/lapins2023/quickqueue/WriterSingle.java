@@ -5,8 +5,8 @@ class WriterSingle extends QuickQueueWriter {
     private final BigBuffer index;
 
     WriterSingle(QuickQueue qkq) {
-        super(new BigBuffer("rw", Utils.PAGE_SIZE, qkq.dir, "", Utils.DATA_EXT));
-        index = new BigBuffer("rw", Utils.PAGE_SIZE, qkq.dir, "", Utils.INDEX_EXT);
+        super(new BigBuffer("rw", Utils.PAGE_SIZE, qkq.dir, "", Utils.EXT_DATA));
+        index = new BigBuffer("rw", Utils.PAGE_SIZE, qkq.dir, "", Utils.EXT_INDEX);
         ////////
         long lastIx = Utils.getLastIx(qkq.dir, true);
         if (lastIx < 0) {
@@ -27,7 +27,7 @@ class WriterSingle extends QuickQueueWriter {
     protected long writeMessage0(int length) {
         long offset = index.offset();
         index.putLong(begin)
-                .putLong(Utils.toLong(length));
+                .putLong(Utils.toStamp(length));
         return offset;
     }
 

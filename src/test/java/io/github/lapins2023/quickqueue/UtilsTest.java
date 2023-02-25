@@ -9,7 +9,7 @@ public class UtilsTest {
 
     @Test
     public void toLong() {
-        long l = Utils.toLong(126);
+        long l = Utils.toStamp(126);
         ByteBuffer allocate = ByteBuffer.allocate(8).order(Utils.NativeByteOrder);
         allocate.putLong(l);
         System.out.println(Arrays.toString(allocate.array()));

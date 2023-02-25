@@ -41,8 +41,8 @@ public class BigBuffer {
 
     private PageBuffer getPageBuffer(int page) {
         try {
-            if (curr != null && curr.page == page) return curr;
-            if (markPageBuff != null && markPageBuff.page == page) return markPageBuff;
+            if (pb != null && pb.page == page) return pb;
+            if (pbM != null && pbM.page == page) return pbM;
             File file = new File(dir, fileNamePrefix + page + fileNameSuffix);
             if (mode.equals("r") && !file.exists()) {
                 return null;
@@ -63,7 +63,7 @@ public class BigBuffer {
         }
     }
 
-    private PageBuffer curr;
+    private PageBuffer pb;
 
     private long cOffset(long page, int pos) {
         return (page << pageBitSize) + pos;
@@ -72,11 +72,11 @@ public class BigBuffer {
     public long offset() {
         int page;
         try {
-            page = curr.page;
+            page = pb.page;
         } catch (NullPointerException e) {
             throw new UnsupportedOperationException("CurrPageNotOpen");
         }
-        return cOffset(page, curr.buffer.position());
+        return cOffset(page, pb.buffer.position());
     }
 
 
@@ -99,25 +99,33 @@ public class BigBuffer {
     public BigBuffer offset(long offset) {
         int pos = (int) offset & pageMaxPos;
         int page = (int) (offset >> pageBitSize);
-        if (curr == null || curr.page != page) {
+        if (pb == null || pb.page != page) {
             PageBuffer curr_ = getPageBuffer(page);
             if (curr_ == null) throw new BufferUnderflowException();
-            if (curr != null) ((DirectBuffer) curr.buffer).cleaner().clean();
-            curr = curr_;
+            if (pb != null) ((DirectBuffer) pb.buffer).cleaner().clean();
+            pb = curr_;
         }
-        if (curr.buffer.position() != pos) {
-            curr.buffer.position(pos);
+        if (pb.buffer.position() != pos) {
+            pb.uPosition(pos);
         }
         return this;
     }
 
+    public BigBuffer skip(int skip) {
+        if (pb.buffer.remaining() > skip) {
+            pb.uPosition(pb.buffer.position() + skip);
+        } else {
+            offset(offset() + skip);
+        }
+        return this;
+    }
 
     private final ByteBuffer tmp = ByteBuffer.allocateDirect(Long.BYTES)
             .order(Utils.NativeByteOrder);
 
     public BigBuffer putInt(int i) {
         try {
-            curr.buffer.putInt(i);
+            pb.buffer.putInt(i);
         } catch (BufferOverflowException e) {
             tmp.clear();
             tmp.putInt(i);
@@ -132,7 +140,7 @@ public class BigBuffer {
 
     public int getInt() {
         try {
-            return curr.buffer.getInt();
+            return pb.buffer.getInt();
         } catch (BufferUnderflowException e) {
             tmp.clear();
             for (int i = 0; i < Integer.BYTES; i++) {
@@ -145,7 +153,7 @@ public class BigBuffer {
 
     public BigBuffer putLong(long i) {
         try {
-            curr.buffer.putLong(i);
+            pb.buffer.putLong(i);
         } catch (BufferOverflowException e) {
             tmp.clear();
             tmp.putLong(i);
@@ -160,7 +168,7 @@ public class BigBuffer {
 
     public char getChar() {
         try {
-            return curr.buffer.getChar();
+            return pb.buffer.getChar();
         } catch (BufferUnderflowException e) {
             tmp.clear();
             for (int i = 0; i < Character.BYTES; i++) {
@@ -173,7 +181,7 @@ public class BigBuffer {
 
     public void putChar(char v) {
         try {
-            curr.buffer.putChar(v);
+            pb.buffer.putChar(v);
         } catch (BufferOverflowException e) {
             tmp.clear();
             tmp.putChar(v);
@@ -210,7 +218,7 @@ public class BigBuffer {
 
     public void get(byte[] dst, int offset, int length) {
         try {
-            curr.buffer.get(dst, offset, length);
+            pb.buffer.get(dst, offset, length);
         } catch (BufferUnderflowException e) {
             int end = offset + length;
             for (int i = offset; i < end; i++)
@@ -221,7 +229,7 @@ public class BigBuffer {
     public void put(byte[] src, int offset, int length) {
         Objects.requireNonNull(src, "ByteArraysIsNull");
         try {
-            curr.buffer.put(src, offset, length);
+            pb.buffer.put(src, offset, length);
         } catch (BufferUnderflowException e) {
             int end = offset + length;
             for (int i = offset; i < end; i++) {
@@ -232,7 +240,7 @@ public class BigBuffer {
 
     public long getLong() {
         try {
-            return curr.buffer.getLong();
+            return pb.buffer.getLong();
         } catch (BufferUnderflowException e) {
             tmp.clear();
             for (int i = 0; i < Long.BYTES; i++) {
@@ -243,28 +251,13 @@ public class BigBuffer {
         }
     }
 
-    public boolean atomAppend(long l1, long atomLong, byte flag) {
-        while (true) {
-            long offset = offset();
-            if (curr.buffer.remaining() >= 16) {
-                if (Utils.UNSAFE.compareAndSwapLong(null, curr.address + curr.buffer.position() + 8, 0, atomLong)) {
-                    curr.buffer.putLong(l1);
-                    curr.skip(8 - 1);
-                    curr.buffer.put(flag);
-                    return true;
-                }
-                offset(offset + 16);
-            } else if (curr.buffer.remaining() == 0) {
-                offset(offset);
-            } else {
-                return false;
-            }
-        }
+    public boolean compareAndSwapLong(long expect, long update) {
+        return pb.buffer.remaining() >= 8 && Utils.UNSAFE.compareAndSwapLong(null, pb.address + pb.buffer.position(), expect, update);
     }
 
     public BigBuffer put(byte v) {
         try {
-            curr.buffer.put(v);
+            pb.buffer.put(v);
         } catch (BufferOverflowException t) {
             offset(offset());
             put(v);
@@ -274,7 +267,7 @@ public class BigBuffer {
 
     public byte get() {
         try {
-            return curr.buffer.get();
+            return pb.buffer.get();
         } catch (BufferUnderflowException e) {
             offset(offset());
             return get();
@@ -283,7 +276,7 @@ public class BigBuffer {
 
 
     private int markPos;
-    private PageBuffer markPageBuff;
+    private PageBuffer pbM;
 
 
     //只提供byte的原子操作
@@ -298,43 +291,44 @@ public class BigBuffer {
         long offset = currOffset + seek;
         int pos = (int) offset & pageMaxPos;
         int page = (int) (offset >> pageBitSize);
-        markPageBuff = getPageBuffer(page);
-        if (markPageBuff == null) {
+        pbM = getPageBuffer(page);
+        if (pbM == null) {
             throw new BufferUnderflowException();
         }
-        byte b = markPageBuff.buffer.get(pos);
+        byte b = pbM.buffer.get(pos);
         markPos = pos;
         return b;
     }
 
     public byte getMark() {
         try {
-            return Utils.getByte(markPageBuff.address + markPos);
+            return Utils.getByte(pbM.address + markPos);
         } catch (NullPointerException t) {
             throw new UnsupportedOperationException("NotMarked");
         }
     }
 
     public void clean() {
-        if (curr != null) {
-            ((DirectBuffer) curr.buffer).cleaner().clean();
+        if (pb != null) {
+            ((DirectBuffer) pb.buffer).cleaner().clean();
         }
-        if (markPageBuff != null) {
-            ((DirectBuffer) markPageBuff.buffer).cleaner().clean();
+        if (pbM != null) {
+            ((DirectBuffer) pbM.buffer).cleaner().clean();
         }
-        curr = null;
-        markPageBuff = null;
+        pb = null;
+        pbM = null;
         markPos = 0;
     }
 
 
     public void force() {
-        curr.buffer.force();
+        pb.buffer.force();
     }
 
     @Override
     public String toString() {
-        return "BigBuffer{" + "curr=" + curr + '}';
+        return "BigBuffer{" + "curr=" + pb + '}';
     }
+
 
 }

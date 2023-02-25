@@ -14,13 +14,16 @@ class WriterMulti extends QuickQueueWriter {
     private final long mpoAIx;
     private final long mpoA2;
     private final int mpn;
+    private boolean nextMpoA;
 
     public WriterMulti(QuickQueueMulti qkq) {
-        super(new BigBuffer("rw", Utils.PAGE_SIZE, Utils.mkdir(new File(qkq.dir, qkq.name)), "", Utils.DATA_EXT));
-        this.index = new BigBuffer("rw", Utils.PAGE_SIZE, qkq.dir, "", Utils.INDEX_EXT);
+        super(new BigBuffer("rw", Utils.PAGE_SIZE, Utils.mkdir(new File(qkq.dir, qkq.name)), "", Utils.EXT_DATA));
+        this.index = new BigBuffer("rw", Utils.PAGE_SIZE, qkq.dir, "", Utils.EXT_INDEX);
         this.mpn = qkq.mpn;
         try {
-            try (RandomAccessFile rw = new RandomAccessFile(new File(qkq.dir, qkq.name + ".mp"), "rw")) {
+            long o1;
+            long o2;
+            try (RandomAccessFile rw = new RandomAccessFile(new File(qkq.dir, qkq.name + Utils.EXT_MP), "rw")) {
                 this.mpoC = rw.getChannel();
                 mpoC.lock();
                 this.mpoM = (MappedByteBuffer) mpoC.map(FileChannel.MapMode.READ_WRITE, 0, 32)
@@ -28,8 +31,11 @@ class WriterMulti extends QuickQueueWriter {
                 this.mpoA1 = Utils.getAddress(this.mpoM);
                 this.mpoA2 = mpoA1 + 8;
                 this.mpoAIx = mpoA2 + 8;
-                long dataEnding = Math.max(Utils.getLong(mpoA1), Utils.getLong(mpoA2));
+                o1 = Utils.getLong(mpoA1);
+                o2 = Utils.getLong(mpoA2);
+                long dataEnding = Math.max(o1, o2);
                 data.offset(dataEnding);
+                nextMpoA = o1 <= o2;
             }
             long lastIx = Utils.getLong(mpoAIx);
             index.offset(lastIx);
@@ -38,8 +44,8 @@ class WriterMulti extends QuickQueueWriter {
             if (!Utils.isFlag(stamp) && Utils.getMPN(stamp) == qkq.mpn) {
                 //处理遗留写入
                 index.offset(lastIx);
-                index.putLong(Math.min(Utils.getLong(mpoA1), Utils.getLong(mpoA2)))
-                        .putLong(Utils.toLong((int) Math.abs(Utils.getLong(mpoA1) - Utils.getLong(mpoA2)), mpn, Utils.FLAG));
+                index.putLong(Math.min(o1, o2))
+                        .putLong(Utils.toStamp((int) Math.abs(o1 - o2), mpn, Utils.FLAG));
             }
             long latestIx = Utils.getLastIx(qkq.dir, false);
             index.offset(latestIx < 0 ? 0 : latestIx + 16);
@@ -58,11 +64,27 @@ class WriterMulti extends QuickQueueWriter {
 
     @Override
     public long writeMessage0(int length) {
-        Utils.putLong(mpoA1, data.offset());
-        index.atomAppend(begin, Utils.toLong(length, mpn, (byte) 0), Utils.FLAG);
-        long l = index.offset() - Utils.IX_MSG_LEN;
-        Utils.putLong(mpoAIx, l);
-        return l;
+        if (nextMpoA) {
+            Utils.putLong(mpoA2, data.offset());
+            nextMpoA = false;
+        } else {
+            Utils.putLong(mpoA1, data.offset());
+            nextMpoA = true;
+        }
+        long stamp = Utils.toStamp(length, mpn, (byte) 0);
+        while (true) {
+            long offset = index.offset();
+            if (index.skip(Utils.LONG_SZ).compareAndSwapLong(0, stamp)) {
+                Utils.putLong(mpoAIx, offset);
+                index.offset(offset)
+                        .putLong(begin)
+                        .skip(Utils.LONG_SZ - 1)
+                        .put(Utils.FLAG);
+                return offset;
+            } else {
+                index.skip(Utils.LONG_SZ * 2);
+            }
+        }
     }
 
     public void close() {

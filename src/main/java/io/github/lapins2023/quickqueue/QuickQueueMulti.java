@@ -20,7 +20,7 @@ public class QuickQueueMulti {
             if (c != (byte) c) throw new IllegalArgumentException("nameMustAscii");
         }
         this.name = name;
-        this.mpn = Utils.toInt((byte) 0, (byte) name.charAt(0), (byte) name.charAt(1), (byte) name.charAt(3));
+        this.mpn = Utils.toInt((byte) 0, (byte) name.charAt(0), (byte) name.charAt(1), (byte) name.charAt(2));
         if (mode.equalsIgnoreCase("rw")) {
             this.writer = new WriterMulti(this);
         } else {
