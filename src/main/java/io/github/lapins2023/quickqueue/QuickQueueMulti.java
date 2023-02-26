@@ -5,22 +5,13 @@ import java.nio.ReadOnlyBufferException;
 
 public class QuickQueueMulti {
     final File dir;
-    final String name;
     private final WriterMulti writer;
     final int mpn;
 
     public QuickQueueMulti(File dir, String mode, String name) {
         Utils.assertMode(mode);
         this.dir = dir;
-        if (name.length() != 3) {
-            throw new IllegalArgumentException("nameMushLength=3");
-        }
-        for (int i = 0; i < name.length(); i++) {
-            char c = name.charAt(i);
-            if (c != (byte) c) throw new IllegalArgumentException("nameMustAscii");
-        }
-        this.name = name;
-        this.mpn = Utils.toInt((byte) 0, (byte) name.charAt(0), (byte) name.charAt(1), (byte) name.charAt(2));
+        this.mpn = Utils.toMPN(name);
         if (mode.equalsIgnoreCase("rw")) {
             this.writer = new WriterMulti(this);
         } else {

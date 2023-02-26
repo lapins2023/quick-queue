@@ -15,7 +15,7 @@ class WriterSingle extends QuickQueueWriter {
         } else {
             index.offset(lastIx);
             long dataOffset = index.getLong();
-            int dataLength = Utils.getLongLowInt(index.getLong());
+            int dataLength = Utils.getLength(index.getLong());
             data.offset(dataOffset + dataLength);
         }
     }

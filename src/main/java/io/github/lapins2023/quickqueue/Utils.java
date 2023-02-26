@@ -23,6 +23,7 @@ abstract class Utils {
     final static byte FLAG = 127;
     final static int IX_MSG_LEN = (1 << 4);
     final static int FLAG_OFF = IX_MSG_LEN - 1;
+    final static int MNP_OFF = IX_MSG_LEN - 4;
 
 
     final static int PAGE_SIZE = Integer.parseInt(System.getProperty("QKQPsz", String.valueOf(ONE_GB)));
@@ -136,8 +137,8 @@ abstract class Utils {
                 : ((long) b << (LONG_SZ - B_SZ)) + ((long) mpn << (INT_SZ)) + length;
     }
 
-    public static int getLongLowInt(long l) {
-        return (int) (Utils.NativeByteOrderBigEndian ? l >> INT_SZ : l);
+    public static int getLength(long stamp) {
+        return (int) (Utils.NativeByteOrderBigEndian ? stamp >> INT_SZ : stamp);
     }
 
     public static File mkdir(File dir) {
@@ -149,8 +150,8 @@ abstract class Utils {
         return dir;
     }
 
-    public static boolean isFlag(long stamp) {
-        return ((byte) (NativeByteOrderBigEndian ? stamp : stamp >> LONG_SZ - B_SZ)) == FLAG;
+    public static boolean notFlag(long stamp) {
+        return ((byte) (NativeByteOrderBigEndian ? stamp : stamp >> LONG_SZ - B_SZ)) != FLAG;
     }
 
     public static int getMPN(long stamp) {
@@ -159,10 +160,23 @@ abstract class Utils {
     }
 
 
-    static int toInt(byte b3, byte b2, byte b1, byte b0) {
-        return (((b3) << 24) |
-                ((b2 & 0xff) << 16) |
-                ((b1 & 0xff) << 8) |
-                ((b0 & 0xff)));
+    static int toMPN(String name) {
+        if (name.length() != 3) {
+            throw new IllegalArgumentException("nameMushLength=3");
+        }
+        for (int i = 0; i < name.length(); i++) {
+            char c = name.charAt(i);
+            if (c != (byte) c || c == 0) throw new IllegalArgumentException("nameMustAscii");
+        }
+        return (((0) << 24) |
+                ((name.charAt(0) & 0xff) << 16) |
+                ((name.charAt(1) & 0xff) << 8) |
+                ((name.charAt(2) & 0xff)));
+    }
+
+    static String fromMPN(int mpn) {
+        return new String(new byte[]{
+                (byte) (mpn >> 16), (byte) (mpn >> 8), (byte) mpn
+        });
     }
 }

@@ -3,29 +3,29 @@ package io.github.lapins2023.quickqueue;
 import org.junit.Test;
 import sun.misc.Unsafe;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.Arrays;
 
 public class ATest {
 
 
     @Test
     public void restartable3b() throws IOException {
-        File file = new File("tmp/a");
-        ByteBuffer allocate = ByteBuffer.allocate(8);
-        new RandomAccessFile(file, "rw").getChannel().read(allocate);
-        System.out.println(Arrays.toString(allocate.array()));
-
+//        File file = new File("tmp/a");
+//        ByteBuffer allocate = ByteBuffer.allocate(8);
+//        new RandomAccessFile(file, "rw").getChannel().read(allocate);
+//        System.out.println(Arrays.toString(allocate.array()));
+//        int a = (int) (System.currentTimeMillis() >> 10);
+//        System.out.println(a);
 //        System.out.println(Integer.toBinaryString(Byte.MAX_VALUE));
 //        System.out.println(Integer.toBinaryString(Byte.MIN_VALUE));
 //        System.out.println(Integer.toBinaryString(Byte.toUnsignedInt(Byte.MAX_VALUE)));
+        int azb = Utils.toMPN("Azb");
+        System.out.println(azb);
+        System.out.println(Utils.fromMPN(azb));
     }
 
     @Test

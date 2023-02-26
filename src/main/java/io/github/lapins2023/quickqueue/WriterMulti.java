@@ -17,13 +17,13 @@ class WriterMulti extends QuickQueueWriter {
     private boolean nextMpoA;
 
     public WriterMulti(QuickQueueMulti qkq) {
-        super(new BigBuffer("rw", Utils.PAGE_SIZE, Utils.mkdir(new File(qkq.dir, qkq.name)), "", Utils.EXT_DATA));
+        super(new BigBuffer("rw", Utils.PAGE_SIZE, Utils.mkdir(new File(qkq.dir, Utils.fromMPN(qkq.mpn))), "", Utils.EXT_DATA));
         this.index = new BigBuffer("rw", Utils.PAGE_SIZE, qkq.dir, "", Utils.EXT_INDEX);
         this.mpn = qkq.mpn;
         try {
             long o1;
             long o2;
-            try (RandomAccessFile rw = new RandomAccessFile(new File(qkq.dir, qkq.name + Utils.EXT_MP), "rw")) {
+            try (RandomAccessFile rw = new RandomAccessFile(new File(qkq.dir, Utils.fromMPN(qkq.mpn) + Utils.EXT_MP), "rw")) {
                 this.mpoC = rw.getChannel();
                 mpoC.lock();
                 this.mpoM = (MappedByteBuffer) mpoC.map(FileChannel.MapMode.READ_WRITE, 0, 32)
@@ -41,7 +41,7 @@ class WriterMulti extends QuickQueueWriter {
             index.offset(lastIx);
             index.getLong();
             long stamp = index.getLong();
-            if (!Utils.isFlag(stamp) && Utils.getMPN(stamp) == qkq.mpn) {
+            if (Utils.notFlag(stamp) && Utils.getMPN(stamp) == qkq.mpn) {
                 //处理遗留写入
                 index.offset(lastIx);
                 index.putLong(Math.min(o1, o2))
