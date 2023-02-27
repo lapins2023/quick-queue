@@ -28,9 +28,14 @@ public class QuickQueueReaderMulti implements AutoCloseable, Iterable<QuickQueue
         final long mpoAIx;
         int lastHit;
 
-        public Data(int mpn) {
+        public Data(int mpn) throws NotActiveException {
+            String name = Utils.fromMPN(mpn);
+            File dir = new File(qkq.dir, name);
+            if (!dir.isDirectory()) {
+                throw new NotActiveException("WriterNotFound=" + name);
+            }
             buffer = new BigBuffer("r", Utils.PAGE_SIZE
-                    , Utils.mkdir(new File(qkq.dir, Utils.fromMPN(mpn)))
+                    , Utils.mkdir(dir)
                     , "", Utils.EXT_DATA);
             this.mpn = mpn;
             message = new QuickQueueMessage(buffer);
@@ -94,7 +99,8 @@ public class QuickQueueReaderMulti implements AutoCloseable, Iterable<QuickQueue
             long dataOffset = index.getLong();
             long stamp = index.getLong();
             int mpn = Utils.getMPN(stamp);
-            Data mpd = data.computeIfAbsent(mpn, Data::new);
+            Data mpd = data.get(mpn);
+            if (mpd == null) data.put(mpn, mpd = new Data(mpn));
             if (Utils.notFlag(stamp)) {
                 mpd.check();
                 index.offset(offset);

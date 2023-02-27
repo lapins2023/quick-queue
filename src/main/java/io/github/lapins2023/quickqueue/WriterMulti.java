@@ -38,14 +38,16 @@ class WriterMulti extends QuickQueueWriter {
                 nextMpoA = o1 <= o2;
             }
             long lastIx = Utils.getLong(mpoAIx);
-            index.offset(lastIx);
-            index.getLong();
-            long stamp = index.getLong();
-            if (Utils.notFlag(stamp) && Utils.getMPN(stamp) == qkq.mpn) {
-                //处理遗留写入
+            if ((lastIx >> 4) << 4 != lastIx) {
                 index.offset(lastIx);
-                index.putLong(Math.min(o1, o2))
-                        .putLong(Utils.toStamp((int) Math.abs(o1 - o2), mpn, Utils.FLAG));
+                index.getLong();
+                long stamp = index.getLong();
+                if (Utils.notFlag(stamp) && Utils.getMPN(stamp) == qkq.mpn) {
+                    //处理遗留写入
+                    index.offset(lastIx);
+                    index.putLong(Math.min(o1, o2))
+                            .putLong(Utils.toStamp((int) Math.abs(o1 - o2), mpn, Utils.FLAG));
+                }
             }
             long latestIx = Utils.getLastIx(qkq.dir, false);
             index.offset(latestIx < 0 ? 0 : latestIx + 16);
@@ -82,7 +84,7 @@ class WriterMulti extends QuickQueueWriter {
                         .put(Utils.FLAG);
                 return offset;
             } else {
-                index.skip(Long.BYTES * 2);
+                index.skip(Long.BYTES);
             }
         }
     }
