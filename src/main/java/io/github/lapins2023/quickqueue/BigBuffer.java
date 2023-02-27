@@ -280,15 +280,15 @@ public class BigBuffer {
 
 
     //只提供byte的原子操作
-    public byte markGet(long seek) {
+    public byte markGet(long skip) {
         long currOffset;
         try {
             currOffset = offset();
         } catch (UnsupportedOperationException e) {
             offset(0);
-            return markGet(seek);
+            return markGet(skip);
         }
-        long offset = currOffset + seek;
+        long offset = currOffset + skip;
         int pos = (int) offset & pageMaxPos;
         int page = (int) (offset >> pageBitSize);
         pbM = getPageBuffer(page);

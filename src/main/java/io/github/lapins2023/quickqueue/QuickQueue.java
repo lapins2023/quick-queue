@@ -53,4 +53,12 @@ public class QuickQueue {
     public String getPath() {
         return dir.getAbsolutePath();
     }
+
+    @Override
+    public String toString() {
+        return "QuickQueue{" +
+                "dir=" + dir +
+                ", writer=" + writer +
+                '}';
+    }
 }

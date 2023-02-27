@@ -16,6 +16,9 @@ public class QuickQueueMultiTest {
                     .packInt(i)
                     .writeMessage());
         }
+        for (QuickQueueMessage quickQueueMessage : quickQueueMulti.createReader()) {
+            System.out.println(quickQueueMessage.unpackInt());
+        }
 
     }
 }

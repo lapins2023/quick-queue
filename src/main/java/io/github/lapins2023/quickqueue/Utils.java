@@ -120,9 +120,9 @@ abstract class Utils {
         UNSAFE.putLong(address, v);
     }
 
-    final static int INT_SZ = Integer.SIZE;
-    final static int LONG_SZ = Long.SIZE;
-    final static int B_SZ = Byte.SIZE;
+    private final static int INT_SZ = Integer.SIZE;
+    private final static int LONG_SZ = Long.SIZE;
+    private final static int B_SZ = Byte.SIZE;
 
     public static long toStamp(int length) {
         return NativeByteOrderBigEndian

@@ -74,15 +74,15 @@ class WriterMulti extends QuickQueueWriter {
         long stamp = Utils.toStamp(length, mpn, (byte) 0);
         while (true) {
             long offset = index.offset();
-            if (index.skip(Utils.LONG_SZ).compareAndSwapLong(0, stamp)) {
+            if (index.skip(Long.BYTES).compareAndSwapLong(0, stamp)) {
                 Utils.putLong(mpoAIx, offset);
                 index.offset(offset)
                         .putLong(begin)
-                        .skip(Utils.LONG_SZ - 1)
+                        .skip(Long.BYTES - 1)
                         .put(Utils.FLAG);
                 return offset;
             } else {
-                index.skip(Utils.LONG_SZ * 2);
+                index.skip(Long.BYTES * 2);
             }
         }
     }
