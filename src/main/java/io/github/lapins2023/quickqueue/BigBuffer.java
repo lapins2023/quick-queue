@@ -327,7 +327,7 @@ public class BigBuffer {
 
     @Override
     public String toString() {
-        return "BigBuffer{" + "curr=" + pb + '}';
+        return "BigBuffer{[" + (pb == null ? "#null" : offset()) + "]" + pb + "}";
     }
 
 

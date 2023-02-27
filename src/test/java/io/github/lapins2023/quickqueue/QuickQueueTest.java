@@ -53,42 +53,46 @@ public class QuickQueueTest {
     //0.46
     @Test
     public void name3() throws IOException, InterruptedException {
-        File file = new File("tmp/t1");
-        FileUtils.clean(file);
-        QuickQueue quickQueue = new QuickQueue(file, "rw");
-        int dom = 10000000;
-        new Thread(() -> {
-            QuickQueueReader reader = quickQueue.createReader();
-            QuickQueueMessage x;
-            long start = System.currentTimeMillis();
-            while (true) {
-                x = reader.next();
-                if (x == null) {
-                    continue;
+        for (int j = 0; j < 10; j++) {
+            File file = new File("tmp/t1");
+            FileUtils.clean(file);
+            QuickQueue quickQueue = new QuickQueue(file, "rw");
+            int dom = 10000000;
+            new Thread(() -> {
+                QuickQueueReader reader = quickQueue.createReader();
+                QuickQueueMessage x;
+                long start = System.currentTimeMillis();
+                while (true) {
+                    x = reader.next();
+                    if (x == null) {
+                        continue;
+                    }
+                    int i = x.unpackInt();
+                    if (i == dom) {
+                        break;
+                    }
                 }
-                int i = x.unpackInt();
-                if (i == dom) {
-                    break;
+                //0.0206 us
+                printUs(start, dom);
+                reader.close();
+                synchronized (file) {
+                    file.notifyAll();
                 }
+            }).start();
+            long s1 = System.currentTimeMillis();
+            for (int i = 0; i <= dom; i++) {
+                long l = quickQueue.newMessage()
+                        .packInt(i)
+                        .writeMessage();
             }
-            //0.0206 us
-            printUs(start, dom);
-            reader.close();
+            //0.0159 us
+            printUs(s1, dom);
+            System.out.println("-------");
             synchronized (file) {
-                file.notifyAll();
+                file.wait();
             }
-        }).start();
-        long s1 = System.currentTimeMillis();
-        for (int i = 0; i <= dom; i++) {
-            long l = quickQueue.newMessage()
-                    .packInt(i)
-                    .writeMessage();
-        }
-        //0.0159 us
-        printUs(s1, dom);
-        System.out.println("=============");
-        synchronized (file) {
-            file.wait();
+            System.out.println();
+            System.out.println("=============");
         }
 //        Thread.sleep(Integer.MAX_VALUE);
     }

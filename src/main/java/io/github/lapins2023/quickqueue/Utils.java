@@ -126,15 +126,15 @@ abstract class Utils {
 
     public static long toStamp(int length) {
         return NativeByteOrderBigEndian
-                ? ((long) length << INT_SZ) + Utils.FLAG
-                : (long) Utils.FLAG << (LONG_SZ - B_SZ) + length;
+                ? ((long) length << INT_SZ) | Utils.FLAG
+                : ((long) Utils.FLAG << (LONG_SZ - B_SZ)) | length;
     }
 
 
     public static long toStamp(int length, int mpn, byte b) {
         return NativeByteOrderBigEndian ?
-                ((long) length << INT_SZ) + ((long) mpn << B_SZ) + b
-                : ((long) b << (LONG_SZ - B_SZ)) + ((long) mpn << (INT_SZ)) + length;
+                ((long) length << INT_SZ) | ((long) mpn << B_SZ) | b
+                : ((long) b << (LONG_SZ - B_SZ)) | ((long) mpn << (INT_SZ)) | length;
     }
 
     public static int getLength(long stamp) {
@@ -166,7 +166,12 @@ abstract class Utils {
         }
         for (int i = 0; i < name.length(); i++) {
             char c = name.charAt(i);
-            if (c != (byte) c || c == 0) throw new IllegalArgumentException("nameMustAscii");
+            if (c != (byte) c || c == 0) {
+                throw new IllegalArgumentException("nameMustA-z,0-9");
+            }
+            if (!((c >= 48 && c <= 57) || (c >= 65 && c <= 90) || (c >= 97 && c <= 122))) {
+                throw new IllegalArgumentException("nameMustA-z,0-9");
+            }
         }
         return (((0) << 24) |
                 ((name.charAt(0) & 0xff) << 16) |

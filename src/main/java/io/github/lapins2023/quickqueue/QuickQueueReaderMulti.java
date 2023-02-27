@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.NotActiveException;
 import java.io.RandomAccessFile;
 import java.nio.BufferUnderflowException;
-import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.util.Iterator;
@@ -24,9 +23,7 @@ public class QuickQueueReaderMulti implements AutoCloseable, Iterable<QuickQueue
         private final int mpn;
         final QuickQueueMessage message;
         final FileChannel mpoC;
-        final MappedByteBuffer mpoM;
-        final long mpoAIx;
-        int lastHit;
+        int lastHit = (int) (System.currentTimeMillis() >> 10);
 
         public Data(int mpn) throws NotActiveException {
             String name = Utils.fromMPN(mpn);
@@ -40,11 +37,8 @@ public class QuickQueueReaderMulti implements AutoCloseable, Iterable<QuickQueue
             this.mpn = mpn;
             message = new QuickQueueMessage(buffer);
             try (RandomAccessFile rw = new RandomAccessFile(
-                    new File(qkq.dir, Utils.fromMPN(qkq.mpn) + Utils.EXT_MP), "r")) {
+                    new File(qkq.dir, Utils.fromMPN(mpn) + Utils.EXT_MP), "r")) {
                 this.mpoC = rw.getChannel();
-                this.mpoM = (MappedByteBuffer) mpoC.map(FileChannel.MapMode.READ_ONLY, 0, 32)
-                        .order(Utils.NativeByteOrder);
-                this.mpoAIx = Utils.getAddress(this.mpoM) + 16;
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -110,6 +104,7 @@ public class QuickQueueReaderMulti implements AutoCloseable, Iterable<QuickQueue
             QuickQueueMessage message =
                     mpd.message.reset(offset, dataOffset, len);
             mark = false;
+            mpd.lastHit = (int) (System.currentTimeMillis() >> 10);
             return message;
         } else {
             return null;
@@ -139,11 +134,10 @@ public class QuickQueueReaderMulti implements AutoCloseable, Iterable<QuickQueue
     }
 
     public void close() {
+        qkq.reads.remove(this.hashCode());
         index.clean();
         for (Data data : data.values()) {
             data.buffer.clean();
         }
     }
-
-
 }

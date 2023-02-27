@@ -10,7 +10,7 @@ public class QuickQueueMulti {
     final File dir;
     private final WriterMulti writer;
     final int mpn;
-    private final ConcurrentHashMap<Integer, QuickQueueReaderMulti> reads = new ConcurrentHashMap<>();
+    final ConcurrentHashMap<Integer, QuickQueueReaderMulti> reads = new ConcurrentHashMap<>();
 
     public QuickQueueMulti(File dir) {
         this(dir, "r", null);

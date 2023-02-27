@@ -3,20 +3,55 @@ package io.github.lapins2023.quickqueue;
 import org.junit.Test;
 import sun.misc.Unsafe;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 
 public class ATest {
 
 
     @Test
-    public void restartable3b() throws IOException {
-//        File file = new File("tmp/a");
+    public void r1() throws IOException, InterruptedException {
+        File file = new File("tmp/a");
+        try {
+            FileChannel rw = new RandomAccessFile(file, "rw").getChannel();
+            while (true) {
+                FileLock x = rw.tryLock();
+                Thread.sleep(1);
+                if (x != null) {
+                    System.out.println(x);
+                    break;
+                }
+            }
+            System.out.println(1);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
+    @Test
+    public void r2() throws IOException, InterruptedException {
+        File file = new File("tmp/a");
+        try {
+            FileChannel rw = new RandomAccessFile(file, "rw").getChannel();
+            rw.lock();
+            System.out.println(1);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        Thread.sleep(Integer.MAX_VALUE);
+    }
+
+    @Test
+    public void restartable3b() throws IOException, InterruptedException {
+
 //        ByteBuffer allocate = ByteBuffer.allocate(8);
 //        new RandomAccessFile(file, "rw").getChannel().read(allocate);
 //        System.out.println(Arrays.toString(allocate.array()));
