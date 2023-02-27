@@ -12,14 +12,20 @@ public class QuickQueueMulti {
     final int mpn;
     private final ConcurrentHashMap<Integer, QuickQueueReaderMulti> reads = new ConcurrentHashMap<>();
 
-    public QuickQueueMulti(File dir, String mode, String name) {
+    public QuickQueueMulti(File dir) {
+        this(dir, "r", null);
+    }
+
+    public QuickQueueMulti(File dir, String mode, String producerName) {
         Utils.assertMode(mode);
         this.dir = dir;
-        this.mpn = Utils.toMPN(name);
         if (mode.equalsIgnoreCase("rw")) {
+            this.mpn = Utils.toMPN(producerName);
             this.writer = new WriterMulti(this);
         } else {
             this.writer = null;
+            this.mpn = 0;
+
         }
 
         Thread thread = new Thread(() -> {
@@ -38,7 +44,6 @@ public class QuickQueueMulti {
         thread.setDaemon(true);
         thread.start();
     }
-
 
     public QuickQueueWriter newMessage() {
         try {

@@ -8,6 +8,8 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 public class ATest {
 
@@ -23,9 +25,13 @@ public class ATest {
 //        System.out.println(Integer.toBinaryString(Byte.MAX_VALUE));
 //        System.out.println(Integer.toBinaryString(Byte.MIN_VALUE));
 //        System.out.println(Integer.toBinaryString(Byte.toUnsignedInt(Byte.MAX_VALUE)));
-        int azb = Utils.toMPN("Azb");
+        String azb1 = "Azb";
+        int azb = Utils.toMPN(azb1);
         System.out.println(azb);
-        System.out.println(Utils.fromMPN(azb));
+
+        long l = Utils.toStamp(13, azb, Utils.FLAG);
+        System.out.println(l);
+        System.out.println(Utils.getMPN(l));
     }
 
     @Test

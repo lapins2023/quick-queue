@@ -155,8 +155,8 @@ abstract class Utils {
     }
 
     public static int getMPN(long stamp) {
-        int lInt = (int) (NativeByteOrderBigEndian ? stamp : stamp >> INT_SZ);
-        return lInt >> B_SZ;
+        long l = NativeByteOrderBigEndian ? stamp << INT_SZ : stamp << B_SZ;
+        return (int) (l >> (INT_SZ + B_SZ));
     }
 
 
