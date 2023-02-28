@@ -16,9 +16,9 @@ class PageBuffer {
 
     @Override
     public String toString() {
-        return "PageBuffer[(" + page + ")" + buffer + "@" + address + ']';
+        return "PageBuffer[(" + page + "/" + address + ")" + buffer + ']';
     }
-    
+
     public void uPosition(int pos) {
         buffer.position(pos);
     }

@@ -159,4 +159,8 @@ public class QuickQueueMessage {
         return bytes;
     }
 
+    public void unpackArray(byte[] bytes, int off, int len) {
+        data.get(bytes, off, len);
+    }
+
 }

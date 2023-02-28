@@ -59,7 +59,7 @@ public class BigBuffer {
                 return new PageBuffer(page, map);
             }
         } catch (Throwable t) {
-            throw new RuntimeException("getMMapRWFailed=" + page, t);
+            throw new RuntimeException("MMapFailed=" + page, t);
         }
     }
 
@@ -279,7 +279,6 @@ public class BigBuffer {
     private PageBuffer pbM;
 
 
-    //只提供byte的原子操作
     public byte markGet(long skip) {
         long currOffset;
         try {
@@ -327,7 +326,7 @@ public class BigBuffer {
 
     @Override
     public String toString() {
-        return "BigBuffer{[" + (pb == null ? "#null" : offset()) + "]" + pb + "}";
+        return "BigBuffer{[" + (pb == null ? "-1" : offset()) + "]" + pb + "}";
     }
 
 
