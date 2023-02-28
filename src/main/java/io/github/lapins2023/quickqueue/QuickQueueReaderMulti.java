@@ -7,6 +7,7 @@ import java.io.RandomAccessFile;
 import java.nio.BufferUnderflowException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -54,11 +55,16 @@ public class QuickQueueReaderMulti implements AutoCloseable, Iterable<QuickQueue
             FileLock fileLock;
             try {
                 fileLock = mpoC.tryLock();
+                if (fileLock != null) {
+                    fileLock.release();
+                    throw new NotActiveException("WriterNotActive=" + Utils.fromMPN(mpn));
+                }
+            } catch (NotActiveException e) {
+                throw e;
+            } catch (OverlappingFileLockException ignored) {
+
             } catch (IOException e) {
                 throw new RuntimeException(e);
-            }
-            if (fileLock != null) {
-                throw new NotActiveException("WriterNotActive=" + Utils.fromMPN(mpn));
             }
         }
 

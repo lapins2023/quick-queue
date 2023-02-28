@@ -2,6 +2,7 @@ package io.github.lapins2023.quickqueue;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.BufferOverflowException;
 import java.util.Objects;
 
 public abstract class QuickQueueWriter {
@@ -108,7 +109,10 @@ public abstract class QuickQueueWriter {
     }
 
     public final long writeMessage() {
-        int length = Math.toIntExact((data.offset() - begin));
+        int length = (int) (data.offset() - begin);
+        if (length < 0) {
+            throw new BufferOverflowException();
+        }
         return writeMessage0(length);
     }
 

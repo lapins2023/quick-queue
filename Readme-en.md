@@ -1,46 +1,47 @@
-# Quick-Queue|[[Readme-en.md](Readme-en.md)]
+# Quick-Queue
 
-Quick-Queue是一个Java进程内高性能，低延迟，零拷贝，持久化，消息队列。可做为进程间共享内存通信使用。
+Quick-Queue is a Java in-process high-performance, low-latency, zero-copy, persistent, message queue. It can be used as
+shared memory communication between processes.
 
-## Quick-Queue特性
+## Quick-Queue Features
 
-* 支持超低延迟的持久化的消息队列。
-* 单线程支持高达每秒数百万次写入。
-* 基本类型数据零拷贝，优化的低GC的代码，大幅减少STW产生。
-* 支持多线程、多进程读取。支持顺序写，顺序读，随机读。
-* 可实现同进程、进程间"发布订阅"模式，作为进程间共享内存通信组件，可实现多进程无锁写入。
-* 支持多副本同步和主从切换功能。解决单点故障风险，防止数据丢失，提供高可用。（Pro功能）
-* 支持数据压缩功能，减少硬盘使用。（Pro功能）
+* Support ultra-low latency persistent message queue.
+* Single thread supports up to millions of writes per second.
+* Zero copy of basic type data, optimized low-GC code, greatly reducing STW generation.
+* Support multi-thread, multi-process reading. Support sequential write, sequential read, random read.
+* It can realize the "publish and subscribe" mode between the same process and between processes. As an inter-process
+  shared memory communication component, it can realize multi-process lock-free writing.
+* Support multi-copy synchronization and master-slave switching functions. Solve the risk of single point of failure,
+  prevent data loss, and provide high availability. (Pro feature)
+* Support data compression function to reduce hard disk usage. (Pro feature)
 
-## 使用示例
+## Example
 
-### 初始化
+### quick-start
 
 ```jshelllanguage
-//dataDir需要是一个目录，当目录不存在时，会自动创建。
-    QuickQueue quickQueue = new QuickQueue(dataDir);
+//dataDir needs to be a directory, if the directory does not exist, it will be created automatically.
+    QuickQueue quickQueue = new QuickQueue(dataDir, "rw");
 ```
 
-### 写入队列
+### write
 
 ```jshelllanguage
-    //打开写入
-    Writer writer = quickQueue.openWrite();
     for (int i = 0; i < 10; i++) {
-        long offset = writer.newMessage()
-                .packInt(i)
-                .packBigDecimal(BigDecimal.valueOf(i)) //BigDecimal使用二进制序列化的方式
-                .packString(String.valueOf(i)) //// packString只支持ascii，如果需要存储Unicode如中文请使用packUnicode
-                .packBoolean(i % 2 == 0)
-                .writeMessage(); //调用writeMessage进行消息写入
-        //offset是消息的Id，可以使用offset进行消息读取。offset为有序递增
-        System.out.println("offset=" + offset);
-    }
+    long offset = writer.newMessage()
+            .packInt(i)
+            .packBigDecimal(BigDecimal.valueOf(i)) //BigDecimal uses binary serialization
+            .packString(String.valueOf(i)) //// packString only supports ascii, if you need to store Unicode such as Chinese, please use packUnicode
+            .packBoolean(i % 2 == 0)
+            .writeMessage(); //Call writeMessage to write index
+    //offset is the Id of the message, you can use offset to read the message. offset is sequential increment
+    System.out.println("offset=" + offset);
+}
 ```
 
-### 读取队列
+### read queue
 
-仅读取一次，可以设置从offset开始读
+Only read once, you can set to start reading from offset
 
 ```jshelllanguage
 {
@@ -57,7 +58,7 @@ Quick-Queue是一个Java进程内高性能，低延迟，零拷贝，持久化�
     }
     System.out.println("---------");
     QuickQueueReader reader = quickQueue.createReader();
-    //setOffset 会返回当前message
+    //setOffset will return the current message
     System.out.println(reader.setOffset(80).unpackInt());
     reader.forEach((message) -> {
         int intVal = message.unpackInt();
@@ -73,7 +74,7 @@ Quick-Queue是一个Java进程内高性能，低延迟，零拷贝，持久化�
 }
 ```
 
-一直读，当有数据写入时可实时读取到，也可设置从offset开始读
+Always read, when there is data written, it can be read in real time, or it can be set to start reading from offset
 
 ```jshelllanguage
 {
@@ -92,13 +93,13 @@ Quick-Queue是一个Java进程内高性能，低延迟，零拷贝，持久化�
                     + ",stringVal=" + stringVal
                     + ",boolean=" + b);
         } else {
-            Thread.sleep(1);//有实时性要求应用中可使用Thread.sleep(0)或Thread.yield或者BusyWait
+            Thread.sleep(1);
         }
     }
 }
 ```
 
-随机读取offset对应的消息
+Randomly read the message corresponding to offset
 
 ```jshelllanguage
 {
@@ -116,15 +117,15 @@ Quick-Queue是一个Java进程内高性能，低延迟，零拷贝，持久化�
 }
 ```
 
-## 场景使用示例
+## Usage
 
-### 发布订阅场景
+### Publish and subscribe
 
-生产者和消费者以及消费者间可以同进程也可跨进程
+Producers, consumers, and consumers can be in the same process or across processes
 
-#### 单生产者,单/多消费者
+#### Single Producer, Single/Multiple Consumers
 
-生产者
+Producer
 
 ```jshelllanguage
 for (int i = 0; i < 1000000; i++) {
@@ -136,7 +137,7 @@ for (int i = 0; i < 1000000; i++) {
 }
 ```
 
-消费者
+Consumer
 
 ```jshelllanguage
 {
@@ -152,9 +153,10 @@ for (int i = 0; i < 1000000; i++) {
 }
 ```
 
-#### 不同Topic多生产者，单消费者顺序消费
+#### Multiple producers of different topics, single consumer sequential consumption
 
-**不同消息主题的多生产者**，每个生产者写入各自的Quick-Queue队列中，消费者分别读取队列。
+**Multiple producers of different message topics**, each producer writes to its own Quick-Queue queue, and consumers
+read the queue separately.
 
 ```jshelllanguage
 {
@@ -169,9 +171,10 @@ for (int i = 0; i < 1000000; i++) {
 }
 ```
 
-消费者分别读取队列，可使用每个队列一个线程读取，也可以使用一个线程切换读取。
+Consumers read the queues separately, and can use one thread for each queue to read, or use one thread to switch between
+reads.
 
-单线程切换读取
+Single thread switching read
 
 ```jshelllanguage
 {
@@ -189,7 +192,7 @@ for (int i = 0; i < 1000000; i++) {
 }
 ```
 
-多线程分别读取，再汇合到本地的线程安全的队列中
+Multi-threads read separately, and then merge into the local thread-safe queue
 
 ```jshelllanguage
 {
@@ -222,16 +225,16 @@ for (int i = 0; i < 1000000; i++) {
 }
 ```
 
-#### 同Topic多生产者，单/多消费者
+#### Same topic with multiple producers, single/multiple consumers
 
-**同消息主题的多生产者**，有两种方式实现。
+**Multiple producers of the same message topic** can be implemented in two ways.
 
-1. 通过无锁队列的方式，多生产者写入到同一队列中。
-2. 每个生产者分别写入各自的队列中，读取时进行排序。
+1. Through the lock-free queue, multiple producers write to the same queue.
+2. Each producer writes to its own queue and sorts when reading.
 
-##### 无锁队列方式
+##### lock-free queue
 
-需要使用QuickQueueMulti，第三个参数是生产者名称，必须是3个字母或数字组合
+Use QuickQueueMulti, the third parameter is the producer name, which must be a combination of 3 letters or numbers
 
 ```jshelllanguage
 {
@@ -269,18 +272,18 @@ for (int i = 0; i < 1000000; i++) {
 }
 ```
 
-##### 写入各自队列，读取时排序消费
+##### Write to their respective queues, sort and consume when reading
 
-每个生产者写入各自的Quick-Queue队列中
+Each producer writes to its own Quick-Queue queue
 
 ```jshelllanguage
 long offset = quickQueueProducerSelf.newMessage()
-        .packLong(id)//有序ID，比如高精度时间等
+        .packLong(id)//Ordered ID, such as high-precision time, etc.
         .writeMessage();
     System.out.println("w] " + offset + ":" + i);
 ```
 
-消费者读取所有的Quick-Queue队列，通过ID排序消费
+Consumers read all Quick-Queue queues and sort consumption by ID
 
 ```jshelllanguage
 {
@@ -300,7 +303,7 @@ long offset = quickQueueProducerSelf.newMessage()
     };
     while (true) {
         int lowest = -1;
-        //仅示例
+        //example only
         for (int i = 0; i < readers.length; i++) {
             Reader reader = readers[i];
             if (reader.message == null) {
@@ -321,14 +324,14 @@ long offset = quickQueueProducerSelf.newMessage()
 }
 ```
 
-### 数据结构描述
+### Data structure description
 
-使用第一个字节进行数据结构类型的描述
+Use the first byte to describe the data structure type
 
 ```jshelllanguage
 {
     quickQueue.newMessage()
-            .packByte((byte) 1)//成交信息
+            .packByte((byte) 1)//transaction information
             .packDouble(1.1)//tradePrice
             .packDouble(1.2)//tradeAmount
             .writeMessage();
@@ -352,19 +355,20 @@ long offset = quickQueueProducerSelf.newMessage()
 }
 ```
 
-### 事件日志流
+### Event log stream
 
-该场景可实现WAL机制，从而实现数据可靠的内存操作。建议使用Pro版本保障数据可靠。
+The WAL mechanism can be implemented to achieve reliable data memory operations. It is recommended to use the Pro
+version to ensure data reliability.
 
 ```jshelllanguage
 {
-    //.....读取数据快照到内存中.....
+    //.....Read data snapshot into memory.....
     HashMap<String, BigDecimal> assetsMap = new HashMap<>();
     assetsMap.put("U-A", new BigDecimal("5"));
     assetsMap.put("U-B", new BigDecimal("3"));
     for (int i = 0; i < 2; i++) {
         //U-A 转"2"到 U-B
-        //校验操作是否通过
+        //Whether the verification operation passed
         BigDecimal userA_Amt = assetsMap.get("U-A");
         BigDecimal transferAmt = new BigDecimal("2");
         if (userA_Amt.compareTo(transferAmt) < 0) {
@@ -372,18 +376,18 @@ long offset = quickQueueProducerSelf.newMessage()
         }
         BigDecimal newAAmt = userA_Amt.subtract(transferAmt);
         BigDecimal newBAmt = assetsMap.getOrDefault("U-B", BigDecimal.ZERO).add(transferAmt);
-        //存储事件日志
+        //Storage Event Log
         byte MsgType_Transfer = 10;
         quickQueue.newMessage()
                 .packByte(MsgType_Transfer)
                 .packLong(System.currentTimeMillis())
-                .packString("U-A") //发出方：A
-                .packString("U-B") //接收方：B
-                .packBigDecimal(new BigDecimal("2")) //转账金额
-                .packBigDecimal(newAAmt)//划转后A的金额
-                .packBigDecimal(newBAmt)//划转后B的金额
+                .packString("U-A") //Sender: A
+                .packString("U-B") //Receiver: B
+                .packBigDecimal(new BigDecimal("2")) //transfer amount
+                .packBigDecimal(newAAmt)//The amount of A after the transfer
+                .packBigDecimal(newBAmt)//The amount of B after the transfer
                 .writeMessage();
-        //修改内存数据,多线程应用中需注意一致性
+        //Modify memory data, pay attention to consistency in multi-threaded applications
         assetsMap.put("U-A", newAAmt);
         assetsMap.put("U-B", newBAmt);
     }
@@ -391,68 +395,74 @@ long offset = quickQueueProducerSelf.newMessage()
 }
 ```
 
-## 详解
+## Detailed explanation
 
-实现思路借鉴非连续内存中的页式管理。利用MMap进行分页，使用 页号+位移量 组成连续的逻辑地址。
+The implementation idea is based on the paging management in non-contiguous memory. Use MMap for paging, and use page
+number + displacement to form continuous logical addresses.
 
-文件结构
+file structure
 
 ```
 dataDir:
-    0.qd //数据页文件
-    0.qx //索引页文件
-    MP1.qm //多生产者是概要文件锁，仅当使用多生产者是会产生
-    MP1://多生产者时数据文件，仅当使用多生产者是会产生
-      0.qd //数据页文件
+    0.qd //data file
+    0.qx //index file
+    MP1.qm //Multi-producer is a profile lock, only generated when using multi-producer
+    MP1://Data files for multi-producers, only when multi-producers are used
+      0.qd //data file
     ....
 ```
 
-消息结构
+message structure
 
 ```
-索引：
-索引使用两个long组成，所以offset总是16的倍数，
-第一个long为消息在dataBuffer的开始位置，第二long由消息长度和一个字节的结束标识组成。
-结束标识会因大端或小端原因，导致出现在long的高字节位或低字节位，但始终会在高地址位。
-读取时会通过自旋的方式对结束标识进行读取。当出现结束标识时开始进行消息读取。
+index:
+The index is composed of two longs, so offset is always a multiple of 16,
+The first long is the start position of the message in the dataBuffer, and the second long is composed of the message length and a one-byte end identifier.
+The end flag will appear in the high byte or low byte of long due to big end or little end, but it will always be in the high address bit.
+When reading, the end identifier will be read by spinning. Message reading starts when the end mark appears.
 
-dataBeginOffset(long) | (messageSize(4字节) 多生产者时生产者名称(3字节) 结束标识(1字节))
-offset 组成为 (page << pageBitSize) + pos
+dataBeginOffset(long) | (messageSize(4字节) Producer name for multiple producers(3字节) 结束标识(1字节))
+offset = (page << pageBitSize) + pos
 ```
 
-多生产者无锁模式
+Multi-producer lock-free mode
 
 ```
-多生产模式采用CAS无锁的方式实现。
-写入时会以CAS的方式，写入第二个long数据，包含生产者名称，当写入成功时，写入生产者概要信息文件，再完成索引文件其他字段信息的写入。
-读取时会通过生产者名读取到对于的数据文件。
-当读取时可以读取到生产者名，但无法读取到索引消息结束标识后，会尝试使用文件锁来判断生产者是否在运行，如果获取到文件锁则说明当前生产者未再运行会抛出异常，并跳过该消息。
-生产者重启后有概率会完成未完成写入的索引。
+The multi-production mode is implemented in a CAS lock-free manner.
+When writing, the second long data will be written in the form of CAS, including the name of the producer. When the writing is successful, the producer profile information file will be written, and then the other field information of the index file will be written.
+When reading, the corresponding data file will be read through the producer name.
+When reading, the producer name can be read, but after the index message end mark cannot be read, it will try to use the file lock to determine whether the producer is running. If the file lock is obtained, it means that the current producer is no longer running. An exception is thrown, and the message is skipped.
+After the producer restarts, there is a probability that the unfinished index will be completed.
 ```
 
-BigDecimal序列化
+BigDecimal serialization
 
 ```
-组成: (标识)(1字节) | scale | byteArrayLength| unscaledValueBigIntegerByteArray
-当 scale 和 byteArrayLength 均小于128时: 标识符为0 scale和byteArrayLength 各占用1个字节
-否则: 标识符为1 scale和byteArrayLength 各占用4个字节
+Composition: (identification) (1 byte) | scale | byteArrayLength| unscaledValueBigIntegerByteArray
+When both scale and byteArrayLength are less than 128: the identifier is 0 scale and byteArrayLength occupy 1 byte each
+Otherwise: the identifier is 1 scale and byteArrayLength occupy 4 bytes each
 ```
 
-## Pro版本功能
+## Pro version features
 
-* 多副本一致性写入
-* 主从切换
-* 数据压缩
+* Multi-copy consistent write
+* Master-slave switching
+* data compression
 
-## 注意
+## Notice
 
-* QuickQueue不是线程安全的。
-* 字节顺序取决于NativeByteOrder，非Java默认的大端。
-* 消息读取时，不是类型安全的，并有溢出风险的，读取时候要十分小心。
-* QuickQueue每个文件页的大小默认为1GB，每页大小必须为2的幂次方可通过`System.setProperty("QKQPsz",...)`修改，不建议修改。
-* 队列容量最大长度取决于索引Buffer地址或者数据Buffer地址最大值需小于 `(IntMax << pageBitSize) + pos`
-  ,因为Page为Int类型，不建议每页设置过小，当每页为1GB时，最大值为2048PB
-* 单个消息体的最大长度为 Integer.Max
-* 单个大于1字节的数据可能会在不同数据页文件中。
-* 默认为异步刷盘，硬盘操作使用内存映射文件所以即使应用崩溃时，系统也会自动完成刷盘。也可以使用QuickQueue.force()
-  进行强制刷盘，但会造成性能损失，Pro版本多副本一致性写入可解决故障风险并仅轻微影响性能。
+* QuickQueue is not thread-safe.
+* The byte order depends on NativeByteOrder, which is not Java's default big endian.
+* When reading the message, it is not type-safe, and there is a risk of overflow, so be very careful when reading it.
+* The default size of each file page in QuickQueue is 1GB, and the size of each page must be a power of 2 before it can
+  be modified by `System.setProperty("QKQPsz",...)`, which is not recommended.
+* The maximum length of the queue capacity depends on the index Buffer address or the maximum data Buffer address must
+  be less than `(IntMax << pageBitSize) + pos`
+  , because the Page is of type Int, it is not recommended to set too small a page, when each page is 1GB, the maximum
+  value is 2048PB
+* The maximum length of a single message body is Integer.Max
+* A single data larger than 1 byte may be in different data page files.
+* The default is asynchronous flashing, and the hard disk operation uses memory-mapped files, so even if the application
+  crashes, the system will automatically complete the flashing. You can also use QuickQueue.force()
+  Forced disk flashing will cause performance loss, and the Pro version of multi-copy consistent writing can solve the
+  risk of failure and only slightly affect performance.

@@ -6,16 +6,16 @@ import java.math.BigInteger;
 public class QuickQueueMessage {
     private long offset;
     private long limit;
-    private final BigBuffer payload;
+    private final BigBuffer data;
 
     QuickQueueMessage(BigBuffer data) {
-        this.payload = data;
+        this.data = data;
     }
 
     public QuickQueueMessage reset(long offset, long dataOffset, long len) {
         this.offset = offset;
         this.limit = dataOffset + len;
-        payload.offset(dataOffset);
+        this.data.offset(dataOffset);
         return this;
     }
 
@@ -40,12 +40,12 @@ public class QuickQueueMessage {
     }
 
     public QuickQueueMessage skipByte(int count) {
-        payload.offset(payload.offset() + Byte.BYTES * count);
+        data.offset(data.offset() + Byte.BYTES * count);
         return this;
     }
 
     public QuickQueueMessage pos(int newPosition) {
-        payload.offset(offset + newPosition);
+        data.offset(offset + newPosition);
         return this;
     }
 
@@ -60,32 +60,32 @@ public class QuickQueueMessage {
     }
 
     public int unpackInt() {
-        return payload.getInt();
+        return data.getInt();
     }
 
     public long unpackLong() {
-        return payload.getLong();
+        return data.getLong();
     }
 
     //
     public byte unpackByte() {
-        return payload.get();
+        return data.get();
     }
 
     public char unpackChar() {
-        return payload.getChar();
+        return data.getChar();
     }
 
     public float unpackFloat() {
-        return payload.getFloat();
+        return data.getFloat();
     }
 
     public double unpackDouble() {
-        return payload.getDouble();
+        return data.getDouble();
     }
 
     public boolean unpackBoolean() {
-        return payload.get() == 1;
+        return data.get() == 1;
     }
 
     public BigDecimal unpackBigDecimal() {
@@ -102,7 +102,7 @@ public class QuickQueueMessage {
             throw new UnsupportedOperationException("unpackBigDecimalUnknownMagicNum");
         }
         byte[] bytes = new byte[len];
-        payload.get(bytes, 0, len);
+        data.get(bytes, 0, len);
         return new BigDecimal(new BigInteger(bytes), scale);
     }
 
@@ -155,7 +155,7 @@ public class QuickQueueMessage {
     public byte[] unpackArray() {
         int len = unpackInt();
         byte[] bytes = new byte[len];
-        payload.get(bytes, 0, len);
+        data.get(bytes, 0, len);
         return bytes;
     }
 
