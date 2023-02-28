@@ -391,7 +391,7 @@ version to ensure data reliability.
         assetsMap.put("U-A", newAAmt);
         assetsMap.put("U-B", newBAmt);
     }
-    //.....消费事件消息到快照中.....
+    //.....Consume event messages into snapshots.....
 }
 ```
 
