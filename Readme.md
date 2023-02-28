@@ -1,4 +1,4 @@
-# Quick-Queue|[[Readme-en.md](Readme-en.md)]
+# Quick-Queue|[Readme-En](Readme-en.md)
 
 Quick-Queue是一个Java进程内高性能，低延迟，零拷贝，持久化，消息队列。可做为进程间共享内存通信使用。
 
