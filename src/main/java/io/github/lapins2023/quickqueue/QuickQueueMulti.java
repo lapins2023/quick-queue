@@ -10,7 +10,6 @@ public class QuickQueueMulti {
     final File dir;
     private final WriterMulti writer;
     final int mpn;
-    final ConcurrentHashMap<Integer, QuickQueueReaderMulti> reads = new ConcurrentHashMap<>();
 
     public QuickQueueMulti(File dir) {
         this(dir, "r", null);
@@ -25,18 +24,15 @@ public class QuickQueueMulti {
         } else {
             this.writer = null;
             this.mpn = 0;
-
         }
 
         Thread thread = new Thread(() -> {
             int time = (int) (System.currentTimeMillis() >> 10);
-            for (Map.Entry<Integer, QuickQueueReaderMulti> entry : reads.entrySet()) {
-                Map<Integer, QuickQueueReaderMulti.Data> data = entry.getValue().data;
-                for (Map.Entry<Integer, QuickQueueReaderMulti.Data> e : data.entrySet()) {
-                    if (time - e.getValue().lastHit > TimeUnit.MINUTES.toMillis(5)) {
-                        QuickQueueReaderMulti.Data remove = data.remove(e.getKey());
-                        remove.buffer.clean();
-                    }
+            for (Map.Entry<Integer, QuickQueueReaderMulti.Data> entry
+                    : QuickQueueReaderMulti.DATA.entrySet()) {
+                QuickQueueReaderMulti.Data data = entry.getValue();
+                if (time - data.lastHit > TimeUnit.MINUTES.toMillis(10)) {
+                    QuickQueueReaderMulti.DATA.remove(data.id);
                 }
             }
         });
@@ -54,9 +50,7 @@ public class QuickQueueMulti {
     }
 
     public QuickQueueReaderMulti createReader() {
-        QuickQueueReaderMulti quickQueueMessages = new QuickQueueReaderMulti(this);
-        reads.put(quickQueueMessages.hashCode(), quickQueueMessages);
-        return quickQueueMessages;
+        return new QuickQueueReaderMulti(this);
     }
 
     @Override

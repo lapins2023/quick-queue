@@ -7,41 +7,47 @@ import java.io.RandomAccessFile;
 import java.nio.BufferUnderflowException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class QuickQueueReaderMulti implements AutoCloseable, Iterable<QuickQueueMessage> {
+    static final Map<Integer, Data> DATA = new ConcurrentHashMap<>();
 
 
     private final BigBuffer index;
     private final QuickQueueMulti qkq;
-    final Map<Integer, Data> data = new ConcurrentHashMap<>();
+    private final HashMap<Integer, Integer> data;
 
-    public class Data {
+
+    public static class Data {
+        static final AtomicInteger ID = new AtomicInteger();
+        final int id = ID.getAndIncrement();
+
         final BigBuffer buffer;
         private final int mpn;
         final QuickQueueMessage message;
         final FileChannel mpoC;
         int lastHit = (int) (System.currentTimeMillis() >> 10);
 
-        public Data(int mpn) throws NotActiveException {
+        public Data(File qkqDir, int mpn) throws NotActiveException {
             String name = Utils.fromMPN(mpn);
-            File dir = new File(qkq.dir, name);
+            File dir = new File(qkqDir, name);
             if (!dir.isDirectory()) {
                 throw new NotActiveException("WriterNotFound=" + name);
             }
-            buffer = new BigBuffer("r", Utils.PAGE_SIZE
-                    , Utils.mkdir(dir)
-                    , "", Utils.EXT_DATA);
+            buffer = new BigBuffer("r", Utils.PAGE_SIZE, dir, "", Utils.EXT_DATA);
             this.mpn = mpn;
             message = new QuickQueueMessage(buffer);
             try (RandomAccessFile rw = new RandomAccessFile(
-                    new File(qkq.dir, Utils.fromMPN(mpn) + Utils.EXT_MP), "r")) {
+                    new File(qkqDir, Utils.fromMPN(mpn) + Utils.EXT_MP), "r")) {
                 this.mpoC = rw.getChannel();
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
+            DATA.put(id, this);
         }
 
         public void check() throws NotActiveException {
@@ -55,11 +61,17 @@ public class QuickQueueReaderMulti implements AutoCloseable, Iterable<QuickQueue
                 throw new NotActiveException("WriterNotActive=" + Utils.fromMPN(mpn));
             }
         }
+
+        void close() {
+            DATA.remove(id);
+            buffer.clean();
+        }
     }
 
     QuickQueueReaderMulti(QuickQueueMulti qkq) {
         index = new BigBuffer("r", Utils.PAGE_SIZE, qkq.dir, "", Utils.EXT_INDEX);
         this.qkq = qkq;
+        this.data = new HashMap<>();
     }
 
     public QuickQueueMessage setOffset(long offset) throws NotActiveException {
@@ -93,8 +105,12 @@ public class QuickQueueReaderMulti implements AutoCloseable, Iterable<QuickQueue
             long dataOffset = index.getLong();
             long stamp = index.getLong();
             int mpn = Utils.getMPN(stamp);
-            Data mpd = data.get(mpn);
-            if (mpd == null) data.put(mpn, mpd = new Data(mpn));
+            Integer mpdId = data.get(mpn);
+            Data mpd;
+            if (mpdId == null || (mpd = DATA.get(mpdId)) == null) {
+                mpd = new Data(qkq.dir, mpn);
+                data.put(mpn, mpd.id);
+            }
             if (Utils.notFlag(stamp)) {
                 mpd.check();
                 index.offset(offset);
@@ -134,10 +150,13 @@ public class QuickQueueReaderMulti implements AutoCloseable, Iterable<QuickQueue
     }
 
     public void close() {
-        qkq.reads.remove(this.hashCode());
         index.clean();
-        for (Data data : data.values()) {
-            data.buffer.clean();
+        for (Integer mpdId : data.values()) {
+            Data remove = DATA.remove(mpdId);
+            if (remove != null) {
+                remove.close();
+            }
         }
     }
+
 }
