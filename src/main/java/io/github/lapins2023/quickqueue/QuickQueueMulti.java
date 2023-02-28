@@ -3,8 +3,8 @@ package io.github.lapins2023.quickqueue;
 import java.io.File;
 import java.nio.ReadOnlyBufferException;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class QuickQueueMulti {
     final File dir;
@@ -26,19 +26,7 @@ public class QuickQueueMulti {
             this.mpn = 0;
         }
 
-        Thread thread = new Thread(() -> {
-            int time = (int) (System.currentTimeMillis() >> 10);
-            for (Map.Entry<Integer, QuickQueueReaderMulti.Data> entry
-                    : QuickQueueReaderMulti.DATA.entrySet()) {
-                QuickQueueReaderMulti.Data data = entry.getValue();
-                if (time - data.lastHit > TimeUnit.MINUTES.toMillis(10)) {
-                    QuickQueueReaderMulti.DATA.remove(data.id);
-                }
-            }
-        });
-        thread.setName("QQMCn-" + thread.getId());
-        thread.setDaemon(true);
-        thread.start();
+
     }
 
     public QuickQueueWriter newMessage() {
@@ -49,8 +37,53 @@ public class QuickQueueMulti {
         }
     }
 
+    private final AtomicBoolean startedCleaner = new AtomicBoolean(false);
+    private Cleaner cleaner;
+
     public QuickQueueReaderMulti createReader() {
+        if (startedCleaner.compareAndSet(false, true)) {
+            cleaner = new Cleaner();
+        }
         return new QuickQueueReaderMulti(this);
+    }
+
+    class Cleaner {
+        private final AtomicBoolean started = new AtomicBoolean(true);
+
+        public Cleaner() {
+            Thread thread = new Thread(() -> {
+                while (started.get()) {
+                    int time = (int) (System.currentTimeMillis() >> 10);
+                    for (Map.Entry<Integer, QuickQueueReaderMulti.Data> entry
+                            : QuickQueueReaderMulti.DATA.entrySet()) {
+                        QuickQueueReaderMulti.Data data = entry.getValue();
+                        if (time - data.lastHit > TimeUnit.MINUTES.toMillis(10)) {
+                            QuickQueueReaderMulti.DATA.remove(data.id);
+                        }
+                    }
+                    try {
+                        //noinspection BusyWait
+                        Thread.sleep(2_000);
+                    } catch (InterruptedException e) {
+                        break;
+                    }
+                }
+            });
+            thread.setName("QQMCn-" + QuickQueueMulti.this.hashCode());
+            thread.setDaemon(true);
+            thread.start();
+        }
+    }
+
+    public void close() {
+        if (this.writer != null) {
+            this.writer.close();
+        }
+        if (cleaner != null) {
+            cleaner.started.set(false);
+            cleaner = null;
+        }
+        startedCleaner.set(false);
     }
 
     @Override

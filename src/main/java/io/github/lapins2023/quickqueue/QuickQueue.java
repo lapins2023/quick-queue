@@ -36,7 +36,7 @@ public class QuickQueue {
     }
 
 
-    public void clean() {
+    public void close() {
         if (this.writer != null) {
             this.writer.clean();
         }

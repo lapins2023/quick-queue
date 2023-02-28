@@ -91,6 +91,8 @@ class WriterMulti extends QuickQueueWriter {
 
     public void close() {
         force();
+        index.clean();
+        data.clean();
         try {
             mpoC.close();
         } catch (IOException ignored) {

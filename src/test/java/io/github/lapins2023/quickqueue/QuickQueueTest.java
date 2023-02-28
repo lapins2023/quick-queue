@@ -38,7 +38,7 @@ public class QuickQueueTest {
                 System.out.println(l);
             }
             System.out.println("=============");
-            quickQueue.clean();
+            quickQueue.close();
         }
 
 
