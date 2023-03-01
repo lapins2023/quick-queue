@@ -23,6 +23,10 @@ public abstract class QuickQueueWriter {
         data.putInt(v);
         return this;
     }
+    public QuickQueueWriter packShort(short v) {
+        data.putShort(v);
+        return this;
+    }
 
     public QuickQueueWriter packLong(long v) {
         data.putLong(v);

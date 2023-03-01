@@ -136,6 +136,19 @@ public class BigBuffer {
         }
         return this;
     }
+    public BigBuffer putShort(short i) {
+        try {
+            pb.buffer.putShort(i);
+        } catch (BufferOverflowException e) {
+            tmp.clear();
+            tmp.putShort(i);
+            tmp.flip();
+            while (tmp.hasRemaining()) {
+                put(tmp.get());
+            }
+        }
+        return this;
+    }
 
 
     public int getInt() {
@@ -148,6 +161,19 @@ public class BigBuffer {
             }
             tmp.flip();
             return tmp.getInt();
+        }
+    }
+
+    public short getShort() {
+        try {
+            return pb.buffer.getShort();
+        } catch (BufferUnderflowException e) {
+            tmp.clear();
+            for (int i = 0; i < Short.BYTES; i++) {
+                tmp.put(get());
+            }
+            tmp.flip();
+            return tmp.getShort();
         }
     }
 
