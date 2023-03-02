@@ -112,6 +112,11 @@ public abstract class QuickQueueWriter {
         return this;
     }
 
+    public QuickQueueWriter discard(){
+        data.offset(begin);
+        return this;
+    }
+
     public final long writeMessage() {
         int length = (int) (data.offset() - begin);
         if (length < 0) {

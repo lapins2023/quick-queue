@@ -18,6 +18,10 @@ public class QuickQueue {
         }
     }
 
+    public QuickQueueWriter getWriter() {
+        return writer;
+    }
+
     public QuickQueueWriter newMessage() {
         try {
             return writer.newMessage();
