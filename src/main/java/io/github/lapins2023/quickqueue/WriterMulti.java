@@ -25,18 +25,18 @@ class WriterMulti extends QuickQueueWriter {
             long o2;
             try (RandomAccessFile rw = new RandomAccessFile(new File(qkq.dir, Utils.fromMPN(qkq.mpn) + Utils.EXT_MP), "rw")) {
                 this.mpoC = rw.getChannel();
-                mpoC.lock();
-                this.mpoM = (MappedByteBuffer) mpoC.map(FileChannel.MapMode.READ_WRITE, 0, 32)
-                        .order(Utils.NativeByteOrder);
-                this.mpoA1 = Utils.getAddress(this.mpoM);
-                this.mpoA2 = mpoA1 + 8;
-                this.mpoAIx = mpoA2 + 8;
-                o1 = Utils.getLong(mpoA1);
-                o2 = Utils.getLong(mpoA2);
-                long dataEnding = Math.max(o1, o2);
-                data.offset(dataEnding);
-                nextMpoA = o1 <= o2;
             }
+            mpoC.lock();
+            this.mpoM = (MappedByteBuffer) mpoC.map(FileChannel.MapMode.READ_WRITE, 0, 32)
+                    .order(Utils.NativeByteOrder);
+            this.mpoA1 = Utils.getAddress(this.mpoM);
+            this.mpoA2 = mpoA1 + 8;
+            this.mpoAIx = mpoA2 + 8;
+            o1 = Utils.getLong(mpoA1);
+            o2 = Utils.getLong(mpoA2);
+            long dataEnding = Math.max(o1, o2);
+            data.offset(dataEnding);
+            nextMpoA = o1 <= o2;
             long lastIx = Utils.getLong(mpoAIx);
             if ((lastIx >> 4) << 4 != lastIx) {
                 index.offset(lastIx);

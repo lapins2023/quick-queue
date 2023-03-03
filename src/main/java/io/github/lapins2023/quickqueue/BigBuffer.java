@@ -51,12 +51,13 @@ public class BigBuffer {
                 throw new Exception("PageOverflow=" + page);
             }
             try (RandomAccessFile rw = new RandomAccessFile(file, mode)) {
-                MappedByteBuffer map = (MappedByteBuffer) rw
-                        .getChannel()
-                        .map(mode.equals("r") ? FileChannel.MapMode.READ_ONLY : FileChannel.MapMode.READ_WRITE
-                                , 0, pageSize)
-                        .order(Utils.NativeByteOrder);
-                return new PageBuffer(page, map);
+                try (FileChannel channel = rw.getChannel()) {
+                    MappedByteBuffer map = (MappedByteBuffer) channel
+                            .map(mode.equals("r") ? FileChannel.MapMode.READ_ONLY : FileChannel.MapMode.READ_WRITE
+                                    , 0, pageSize)
+                            .order(Utils.NativeByteOrder);
+                    return new PageBuffer(page, map);
+                }
             }
         } catch (Throwable t) {
             throw new RuntimeException("MMapFailed=" + page, t);
@@ -136,6 +137,7 @@ public class BigBuffer {
         }
         return this;
     }
+
     public BigBuffer putShort(short i) {
         try {
             pb.buffer.putShort(i);

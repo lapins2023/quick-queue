@@ -1,6 +1,12 @@
 package io.github.lapins2023.quickqueue;
 
 
+import jnr.ffi.annotations.In;
+import net.openhft.chronicle.bytes.SyncMode;
+import net.openhft.chronicle.queue.ChronicleQueue;
+import net.openhft.chronicle.queue.ExcerptAppender;
+import net.openhft.chronicle.queue.ExcerptTailer;
+import net.openhft.chronicle.queue.impl.single.SingleChronicleQueueBuilder;
 import org.junit.Test;
 
 import java.io.File;
@@ -99,11 +105,11 @@ public class QuickQueueTest {
 
     @Test
     public void name4() throws IOException, InterruptedException {
-//        File file = new File("tmp/t2");
-//        FileUtils.clean(file);
-//        ChronicleQueue queue = SingleChronicleQueueBuilder.single(file).build();
-//        ExcerptAppender appender = queue.acquireAppender();
-//        int dom = 10000000;
+        File file = new File("tmp/t2");
+        FileUtils.clean(file);
+        ChronicleQueue queue = SingleChronicleQueueBuilder.single(file).syncMode(SyncMode.SYNC).bufferCapacity(Integer.MAX_VALUE).build();
+        ExcerptAppender appender = queue.acquireAppender();
+        int dom = 10000000;
 //        new Thread(() -> {
 //            ExcerptTailer tailer = queue.createTailer();
 //            long start = System.currentTimeMillis();
@@ -120,16 +126,18 @@ public class QuickQueueTest {
 //            }
 //
 //        }).start();
-//        long s1 = System.currentTimeMillis();
-//        for (int i = 0; i <= dom; i++) {
-//            int finalI = i;
-//            appender.writeBytes(w -> w.writeInt(finalI));
-//        }
-//        printUs(s1, dom);
-//        System.out.println("=============");
-//        synchronized (file) {
-//            file.wait();
-//        }
+        System.out.println(1);
+        long s1 = System.currentTimeMillis();
+        for (int i = 0; i <= dom; i++) {
+            int finalI = i;
+            appender.writeText("1");
+        }
+
+        printUs(s1, dom);
+        System.out.println("=============");
+        synchronized (file) {
+            file.wait();
+        }
 //        queue.close();
 //        Thread.sleep(Integer.MAX_VALUE);
     }
@@ -184,6 +192,7 @@ public class QuickQueueTest {
 
 
     private void printUs(long start, long count) {
+//        System.out.println(System.currentTimeMillis() - start);
         System.out.println(((double) (System.currentTimeMillis() - start) / count) * 1000 + " us");
     }
 }

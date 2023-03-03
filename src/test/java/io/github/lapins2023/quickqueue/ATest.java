@@ -66,7 +66,9 @@ public class ATest {
 
         long l = Utils.toStamp(13, azb, Utils.FLAG);
         System.out.println(l);
+        //4291170
         System.out.println(Utils.getMPN(l));
+        System.out.println(Utils.fromMPN(azb));
     }
 
     @Test
