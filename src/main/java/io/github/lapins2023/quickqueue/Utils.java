@@ -164,14 +164,8 @@ abstract class Utils {
         if (name.length() != 3) {
             throw new IllegalArgumentException("nameMushLength=3");
         }
-        for (int i = 0; i < name.length(); i++) {
-            char c = name.charAt(i);
-            if (c != (byte) c || c == 0) {
-                throw new IllegalArgumentException("nameMustA-z,0-9");
-            }
-            if (!((c >= 48 && c <= 57) || (c >= 65 && c <= 90) || (c >= 97 && c <= 122))) {
-                throw new IllegalArgumentException("nameMustA-z,0-9");
-            }
+        if (!name.matches("^[0-9A-z]+$")) {
+            throw new IllegalArgumentException("nameMustA-z,0-9=" + name);
         }
         return (((0) << 24) |
                 ((name.charAt(0) & 0xff) << 16) |
