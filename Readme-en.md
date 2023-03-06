@@ -21,7 +21,7 @@ shared memory communication between processes.
 
 ```jshelllanguage
 //dataDir needs to be a directory, if the directory does not exist, it will be created automatically.
-    QuickQueue quickQueue = new QuickQueue(dataDir, "rw");
+    QuickQueue quickQueueSingle = new QuickQueue(dataDir, "rw");
 ```
 
 ### write
@@ -45,7 +45,7 @@ Only read once, you can set to start reading from offset
 
 ```jshelllanguage
 {
-    for (QuickQueueMessage message : quickQueue.createReader()) {
+    for (QuickQueueMessage message : quickQueueSingle.createReader()) {
         int intVal = message.unpackInt();
         BigDecimal decimalVal = message.unpackBigDecimal();
         String stringVal = message.unpackString();
@@ -57,7 +57,7 @@ Only read once, you can set to start reading from offset
                 + ",boolean=" + b);
     }
     System.out.println("---------");
-    QuickQueueReader reader = quickQueue.createReader();
+    QuickQueueReader reader = quickQueueSingle.createReader();
     //setOffset will return the current message
     System.out.println(reader.setOffset(80).unpackInt());
     reader.forEach((message) -> {
@@ -78,7 +78,7 @@ Always read, when there is data written, it can be read in real time, or it can 
 
 ```jshelllanguage
 {
-    QuickQueueReader reader = quickQueue.createReader();
+    QuickQueueReader reader = quickQueueSingle.createReader();
     reader.setOffset(32);
     while (true) {
         QuickQueueMessage message = reader.next();
@@ -103,7 +103,7 @@ Randomly read the message corresponding to offset
 
 ```jshelllanguage
 {
-    QuickQueueReader reader = quickQueue.createReader();
+    QuickQueueReader reader = quickQueueSingle.createReader();
     QuickQueueMessage message = reader.setOffset(32);
     int intVal = message.unpackInt();
     BigDecimal decimalVal = message.unpackBigDecimal();
@@ -129,7 +129,7 @@ Producer
 
 ```jshelllanguage
 for (int i = 0; i < 1000000; i++) {
-    long offset = quickQueue.newMessage()
+    long offset = quickQueueSingle.newMessage()
             .packInt(i)
             .writeMessage();
     System.out.println("w] " + offset + ":" + i);
@@ -141,7 +141,7 @@ Consumer
 
 ```jshelllanguage
 {
-    QuickQueueReader reader = quickQueue.createReader();
+    QuickQueueReader reader = quickQueueSingle.createReader();
     QuickQueueMessage message;
     while (true) {
         if ((message = reader.next()) != null) {
@@ -330,17 +330,17 @@ Use the first byte to describe the data structure type
 
 ```jshelllanguage
 {
-    quickQueue.newMessage()
+    quickQueueSingle.newMessage()
             .packByte((byte) 1)//transaction information
             .packDouble(1.1)//tradePrice
             .packDouble(1.2)//tradeAmount
             .writeMessage();
-    quickQueue.newMessage()
+    quickQueueSingle.newMessage()
             .packByte((byte) 2)//订单信息
             .packString("orderId")//orderId
             .packBigDecimal(new BigDecimal("0.1"))//price
             .writeMessage();
-    for (QuickQueueMessage message : quickQueue.createReader()) {
+    for (QuickQueueMessage message : quickQueueSingle.createReader()) {
         byte type = message.unpackByte();
         if (type == 1) {
             double tradePx = message.unpackDouble();
@@ -378,7 +378,7 @@ version to ensure data reliability.
         BigDecimal newBAmt = assetsMap.getOrDefault("U-B", BigDecimal.ZERO).add(transferAmt);
         //Storage Event Log
         byte MsgType_Transfer = 10;
-        quickQueue.newMessage()
+        quickQueueSingle.newMessage()
                 .packByte(MsgType_Transfer)
                 .packLong(System.currentTimeMillis())
                 .packString("U-A") //Sender: A

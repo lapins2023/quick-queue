@@ -18,14 +18,14 @@ Quick-Queue是一个Java进程内高性能，低延迟，零拷贝，持久化�
 
 ```jshelllanguage
 //dataDir需要是一个目录，当目录不存在时，会自动创建。
-    QuickQueue quickQueue = new QuickQueue(dataDir);
+    QuickQueue quickQueueSingle = new QuickQueue(dataDir);
 ```
 
 ### 写入队列
 
 ```jshelllanguage
     //打开写入
-    Writer writer = quickQueue.openWrite();
+    Writer writer = quickQueueSingle.openWrite();
     for (int i = 0; i < 10; i++) {
         long offset = writer.newMessage()
                 .packInt(i)
@@ -44,7 +44,7 @@ Quick-Queue是一个Java进程内高性能，低延迟，零拷贝，持久化�
 
 ```jshelllanguage
 {
-    for (QuickQueueMessage message : quickQueue.createReader()) {
+    for (QuickQueueMessage message : quickQueueSingle.createReader()) {
         int intVal = message.unpackInt();
         BigDecimal decimalVal = message.unpackBigDecimal();
         String stringVal = message.unpackString();
@@ -56,7 +56,7 @@ Quick-Queue是一个Java进程内高性能，低延迟，零拷贝，持久化�
                 + ",boolean=" + b);
     }
     System.out.println("---------");
-    QuickQueueReader reader = quickQueue.createReader();
+    QuickQueueReader reader = quickQueueSingle.createReader();
     //setOffset 会返回当前message
     System.out.println(reader.setOffset(80).unpackInt());
     reader.forEach((message) -> {
@@ -77,7 +77,7 @@ Quick-Queue是一个Java进程内高性能，低延迟，零拷贝，持久化�
 
 ```jshelllanguage
 {
-    QuickQueueReader reader = quickQueue.createReader();
+    QuickQueueReader reader = quickQueueSingle.createReader();
     reader.setOffset(32);
     while (true) {
         QuickQueueMessage message = reader.next();
@@ -102,7 +102,7 @@ Quick-Queue是一个Java进程内高性能，低延迟，零拷贝，持久化�
 
 ```jshelllanguage
 {
-    QuickQueueReader reader = quickQueue.createReader();
+    QuickQueueReader reader = quickQueueSingle.createReader();
     QuickQueueMessage message = reader.setOffset(32);
     int intVal = message.unpackInt();
     BigDecimal decimalVal = message.unpackBigDecimal();
@@ -128,7 +128,7 @@ Quick-Queue是一个Java进程内高性能，低延迟，零拷贝，持久化�
 
 ```jshelllanguage
 for (int i = 0; i < 1000000; i++) {
-    long offset = quickQueue.newMessage()
+    long offset = quickQueueSingle.newMessage()
             .packInt(i)
             .writeMessage();
     System.out.println("w] " + offset + ":" + i);
@@ -140,7 +140,7 @@ for (int i = 0; i < 1000000; i++) {
 
 ```jshelllanguage
 {
-    QuickQueueReader reader = quickQueue.createReader();
+    QuickQueueReader reader = quickQueueSingle.createReader();
     QuickQueueMessage message;
     while (true) {
         if ((message = reader.next()) != null) {
@@ -327,17 +327,17 @@ long offset = quickQueueProducerSelf.newMessage()
 
 ```jshelllanguage
 {
-    quickQueue.newMessage()
+    quickQueueSingle.newMessage()
             .packByte((byte) 1)//成交信息
             .packDouble(1.1)//tradePrice
             .packDouble(1.2)//tradeAmount
             .writeMessage();
-    quickQueue.newMessage()
+    quickQueueSingle.newMessage()
             .packByte((byte) 2)//订单信息
             .packString("orderId")//orderId
             .packBigDecimal(new BigDecimal("0.1"))//price
             .writeMessage();
-    for (QuickQueueMessage message : quickQueue.createReader()) {
+    for (QuickQueueMessage message : quickQueueSingle.createReader()) {
         byte type = message.unpackByte();
         if (type == 1) {
             double tradePx = message.unpackDouble();
@@ -374,7 +374,7 @@ long offset = quickQueueProducerSelf.newMessage()
         BigDecimal newBAmt = assetsMap.getOrDefault("U-B", BigDecimal.ZERO).add(transferAmt);
         //存储事件日志
         byte MsgType_Transfer = 10;
-        quickQueue.newMessage()
+        quickQueueSingle.newMessage()
                 .packByte(MsgType_Transfer)
                 .packLong(System.currentTimeMillis())
                 .packString("U-A") //发出方：A

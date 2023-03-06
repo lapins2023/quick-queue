@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class QuickQueueReaderMulti implements AutoCloseable, Iterable<QuickQueueMessage> {
+public class QuickQueueReaderMulti extends QuickQueueReader {
     static final Map<Integer, Data> DATA = new ConcurrentHashMap<>();
 
 
@@ -23,7 +23,7 @@ public class QuickQueueReaderMulti implements AutoCloseable, Iterable<QuickQueue
     private final HashMap<Integer, Integer> data;
 
 
-    public static class Data {
+    static class Data {
         static final AtomicInteger ID = new AtomicInteger();
         final int id = ID.getAndIncrement();
 
@@ -131,28 +131,6 @@ public class QuickQueueReaderMulti implements AutoCloseable, Iterable<QuickQueue
         } else {
             return null;
         }
-    }
-
-
-    @Override
-    public Iterator<QuickQueueMessage> iterator() {
-        return new Iterator<QuickQueueMessage>() {
-            private QuickQueueMessage quickQueueMessage;
-
-            @Override
-            public boolean hasNext() {
-                try {
-                    return (quickQueueMessage = QuickQueueReaderMulti.this.next()) != null;
-                } catch (NotActiveException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-
-            @Override
-            public QuickQueueMessage next() {
-                return quickQueueMessage;
-            }
-        };
     }
 
     public void close() {

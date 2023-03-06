@@ -1,11 +1,9 @@
 package io.github.lapins2023.quickqueue;
 
 
-import jnr.ffi.annotations.In;
 import net.openhft.chronicle.bytes.SyncMode;
 import net.openhft.chronicle.queue.ChronicleQueue;
 import net.openhft.chronicle.queue.ExcerptAppender;
-import net.openhft.chronicle.queue.ExcerptTailer;
 import net.openhft.chronicle.queue.impl.single.SingleChronicleQueueBuilder;
 import org.junit.Test;
 
@@ -13,7 +11,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public class QuickQueueTest {
+public class QuickQueueSingleTest {
     static {
 //        System.setProperty("QKQPsz", String.valueOf(1L << 12));
     }
@@ -35,20 +33,20 @@ public class QuickQueueTest {
     public void name() throws IOException {
         File file = new File("tmp/t1");
         FileUtils.clean(file);
-        QuickQueue quickQueue = new QuickQueue(file, "rw");
+        QuickQueueSingle quickQueueSingle = new QuickQueueSingle(file, "rw");
         {
             for (int i = 0; i < 256; i++) {
-                long l = quickQueue.newMessage()
+                long l = quickQueueSingle.newMessage()
                         .packInt(i)
                         .writeMessage();
                 System.out.println(l);
             }
             System.out.println("=============");
-            quickQueue.close();
+            quickQueueSingle.close();
         }
 
 
-        try (QuickQueueReader reader = quickQueue.createReader()) {
+        try (QuickQueueReaderSingle reader = quickQueueSingle.createReader()) {
             QuickQueueMessage x;
             while ((x = reader.next()) != null) {
                 System.out.println(x.unpackInt());
@@ -62,10 +60,10 @@ public class QuickQueueTest {
         for (int j = 0; j < 10; j++) {
             File file = new File("tmp/t1");
             FileUtils.clean(file);
-            QuickQueue quickQueue = new QuickQueue(file, "rw");
+            QuickQueueSingle quickQueueSingle = new QuickQueueSingle(file, "rw");
             int dom = 10000000;
             new Thread(() -> {
-                QuickQueueReader reader = quickQueue.createReader();
+                QuickQueueReaderSingle reader = quickQueueSingle.createReader();
                 QuickQueueMessage x;
                 long start = System.currentTimeMillis();
                 while (true) {
@@ -87,7 +85,7 @@ public class QuickQueueTest {
             }).start();
             long s1 = System.currentTimeMillis();
             for (int i = 0; i <= dom; i++) {
-                long l = quickQueue.newMessage()
+                long l = quickQueueSingle.newMessage()
                         .packInt(i)
                         .writeMessage();
             }
@@ -99,6 +97,7 @@ public class QuickQueueTest {
             }
             System.out.println();
             System.out.println("=============");
+            quickQueueSingle.close();
         }
 //        Thread.sleep(Integer.MAX_VALUE);
     }
@@ -169,10 +168,10 @@ public class QuickQueueTest {
     public void name41b1() throws InterruptedException, IOException {
         File file = new File("tmp/t1");
         FileUtils.clean(file);
-        QuickQueue quickQueue = new QuickQueue(file, "rw");
+        QuickQueueSingle quickQueueSingle = new QuickQueueSingle(file, "rw");
         int dom = 10000000;
         new Thread(() -> {
-            QuickQueueReader reader = quickQueue.createReader();
+            QuickQueueReaderSingle reader = quickQueueSingle.createReader();
             QuickQueueMessage x;
             while (true) {
                 x = reader.next();
@@ -183,7 +182,7 @@ public class QuickQueueTest {
             }
         }).start();
         for (int i = 0; i <= dom; i++) {
-            long l = quickQueue.newMessage()
+            long l = quickQueueSingle.newMessage()
                     .packLong(System.nanoTime())
                     .writeMessage();
             Thread.sleep(300);

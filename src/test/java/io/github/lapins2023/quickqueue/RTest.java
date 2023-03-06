@@ -8,20 +8,20 @@ import java.math.BigDecimal;
 
 public class RTest {
 
-    private QuickQueue quickQueue;
+    private QuickQueueSingle quickQueueSingle;
 
     @Before
     public void setUp() throws Exception {
         File file = new File("tmp/t1");
 //        Files.delete(file.toPath());
 //        Files.createDirectory(file.toPath());
-        quickQueue = new QuickQueue(file,"rw");
+        quickQueueSingle = new QuickQueueSingle(file,"rw");
     }
 
     @Test
     public void t1() {
         for (int i = 0; i < 10; i++) {
-            long offset = quickQueue.newMessage()
+            long offset = quickQueueSingle.newMessage()
                     .packInt(i)
                     .packBigDecimal(BigDecimal.valueOf(i)) //BigDecimal使用二进制序列化的方式，如需要跨语言可以使用String类型或BJSON Decimal128
                     .packString(String.valueOf(i)) //// packString只支持ascii，如果需要存储Unicode如中文请使用packUnicode
@@ -34,7 +34,7 @@ public class RTest {
 
     @Test
     public void t2() {
-        for (QuickQueueMessage message : quickQueue.createReader()) {
+        for (QuickQueueMessage message : quickQueueSingle.createReader()) {
             int intVal = message.unpackInt();
             BigDecimal decimalVal = message.unpackBigDecimal();
             String stringVal = message.unpackString();
@@ -46,7 +46,7 @@ public class RTest {
                     + ",boolean=" + b);
         }
         System.out.println("---------");
-        QuickQueueReader reader = quickQueue.createReader();
+        QuickQueueReaderSingle reader = quickQueueSingle.createReader();
         System.out.println(reader.setOffset(80).unpackInt());
         reader.forEach((message) -> {
             int intVal = message.unpackInt();
@@ -63,7 +63,7 @@ public class RTest {
 
     @Test
     public void t3() throws InterruptedException {
-        QuickQueueReader reader = quickQueue.createReader();
+        QuickQueueReaderSingle reader = quickQueueSingle.createReader();
         reader.setOffset(32);
         while (true) {
             QuickQueueMessage message = reader.next();

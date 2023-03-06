@@ -1,56 +1,12 @@
 package io.github.lapins2023.quickqueue;
 
-import java.nio.BufferUnderflowException;
+import java.io.IOException;
 import java.util.Iterator;
 
-public class QuickQueueReader implements AutoCloseable, Iterable<QuickQueueMessage> {
-    private final BigBuffer index;
-    private final BigBuffer data;
+public abstract class QuickQueueReader implements AutoCloseable, Iterable<QuickQueueMessage> {
+    public abstract QuickQueueMessage setOffset(long offset) throws IOException;
 
-    QuickQueueReader(QuickQueue qkq) {
-        index = new BigBuffer("r", Utils.PAGE_SIZE, qkq.dir, "", Utils.EXT_INDEX);
-        data = new BigBuffer("r", Utils.PAGE_SIZE, qkq.dir, "", Utils.EXT_DATA);
-        message = new QuickQueueMessage(data);
-    }
-
-
-    public QuickQueueMessage setOffset(long offset) {
-        if (offset < 0) {
-            return null;
-        } else {
-            if ((offset >> 4) << 4 != offset) {
-                throw new IllegalArgumentException("Offset=" + offset);
-            }
-            index.offset(offset);
-            return next();
-        }
-    }
-
-    private boolean mark = false;
-    private final QuickQueueMessage message;
-
-    public QuickQueueMessage next() {
-        byte b;
-        if (mark) {
-            b = index.getMark();
-        } else {
-            try {
-                b = index.markGet(Utils.FLAG_OFF);
-                mark = true;
-            } catch (BufferUnderflowException e) {
-                return null;
-            }
-        }
-        if (b == Utils.FLAG) {
-            long offset = index.offset();
-            long dataOffset = index.getLong();
-            long len = Utils.getLength(index.getLong());
-            mark = false;
-            return message.reset(offset, dataOffset, len);
-        } else {
-            return null;
-        }
-    }
+    public abstract QuickQueueMessage next() throws IOException;
 
     @Override
     public Iterator<QuickQueueMessage> iterator() {
@@ -59,7 +15,11 @@ public class QuickQueueReader implements AutoCloseable, Iterable<QuickQueueMessa
 
             @Override
             public boolean hasNext() {
-                return (quickQueueMessage = QuickQueueReader.this.next()) != null;
+                try {
+                    return (quickQueueMessage = QuickQueueReader.this.next()) != null;
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
             }
 
             @Override
@@ -68,11 +28,4 @@ public class QuickQueueReader implements AutoCloseable, Iterable<QuickQueueMessa
             }
         };
     }
-
-    public void close() {
-        index.clean();
-        data.clean();
-    }
-
-
 }

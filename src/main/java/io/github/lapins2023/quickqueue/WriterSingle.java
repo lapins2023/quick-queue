@@ -4,7 +4,7 @@ class WriterSingle extends QuickQueueWriter {
 
     private final BigBuffer index;
 
-    WriterSingle(QuickQueue qkq) {
+    WriterSingle(QuickQueueSingle qkq) {
         super(new BigBuffer("rw", Utils.PAGE_SIZE, qkq.dir, "", Utils.EXT_DATA));
         index = new BigBuffer("rw", Utils.PAGE_SIZE, qkq.dir, "", Utils.EXT_INDEX);
         ////////

@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class QuickQueueMulti {
+public class QuickQueueMulti extends QuickQueue {
     final File dir;
     private final WriterMulti writer;
     final int mpn;
@@ -29,6 +29,11 @@ public class QuickQueueMulti {
 
     }
 
+    @Override
+    public QuickQueueWriter getWriter() {
+        return null;
+    }
+
     public QuickQueueWriter newMessage() {
         try {
             return writer.newMessage();
@@ -37,14 +42,26 @@ public class QuickQueueMulti {
         }
     }
 
+    @Override
+    public void force() {
+        if (writer != null) {
+            writer.force();
+        }
+    }
+
     private final AtomicBoolean startedCleaner = new AtomicBoolean(false);
     private Cleaner cleaner;
 
-    public QuickQueueReaderMulti createReader() {
+    public QuickQueueReader createReader() {
         if (startedCleaner.compareAndSet(false, true)) {
             cleaner = new Cleaner();
         }
         return new QuickQueueReaderMulti(this);
+    }
+
+    @Override
+    public String getPath() {
+        return dir.getAbsolutePath();
     }
 
     class Cleaner {

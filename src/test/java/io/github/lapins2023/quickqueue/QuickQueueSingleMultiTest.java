@@ -12,7 +12,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-public class QuickQueueMultiTest {
+public class QuickQueueSingleMultiTest {
     @Test
     public void name1() throws IOException, InterruptedException {
         File dir = new File("tmp/t2");
@@ -40,7 +40,7 @@ public class QuickQueueMultiTest {
                 }
             }
         }).start();
-        QuickQueueReaderMulti reader = new QuickQueueMulti(dir).createReader();
+        QuickQueueReaderMulti reader = (QuickQueueReaderMulti) new QuickQueueMulti(dir).createReader();
         while (true) {
             QuickQueueMessage next;
             if ((next = reader.next()) != null) {
@@ -90,7 +90,7 @@ public class QuickQueueMultiTest {
             QuickQueueMulti quickQueue = new QuickQueueMulti(file, "rw", "AA1");
             int dom = 10000000;
             new Thread(() -> {
-                QuickQueueReaderMulti reader = quickQueue.createReader();
+                QuickQueueReaderMulti reader = (QuickQueueReaderMulti) quickQueue.createReader();
                 QuickQueueMessage x;
                 long start = System.currentTimeMillis();
                 while (true) {

@@ -2,67 +2,33 @@ package io.github.lapins2023.quickqueue;
 
 
 import java.io.File;
-import java.nio.ReadOnlyBufferException;
 
-public class QuickQueue {
-    final File dir;
-    private final WriterSingle writer;
+public abstract class QuickQueue {
+    public abstract QuickQueueWriter getWriter();
 
-    public QuickQueue(File dir, String mode) {
-        Utils.assertMode(mode);
-        this.dir = Utils.mkdir(dir);
-        if (mode.equalsIgnoreCase("rw")) {
-            this.writer = new WriterSingle(this);
-        } else {
-            this.writer = null;
-        }
+    public abstract QuickQueueWriter newMessage();
+
+    public abstract void force();
+
+    public abstract void close();
+
+    public abstract QuickQueueReader createReader();
+
+    public abstract String getPath();
+
+    public static QuickQueue createReadonlySingle(File dir) {
+        return createSingle(dir, "r");
     }
 
-    public QuickQueueWriter getWriter() {
-        return writer;
+    public static QuickQueue createSingle(File dir, String mode) {
+        return new QuickQueueSingle(dir, mode);
     }
 
-    public QuickQueueWriter newMessage() {
-        try {
-            return writer.newMessage();
-        } catch (NullPointerException e) {
-            throw new ReadOnlyBufferException();
-        }
+    public static QuickQueue createMulti(File dir, String mode, String producerName) {
+        return new QuickQueueMulti(dir, mode, producerName);
     }
 
-
-    public void force() {
-        try {
-            writer.force();
-        } catch (NullPointerException e) {
-            throw new ReadOnlyBufferException();
-        }
-    }
-
-
-    public void close() {
-        if (this.writer != null) {
-            this.writer.clean();
-        }
-    }
-
-    public QuickQueueReader createReader() {
-        return new QuickQueueReader(this);
-    }
-
-    //////////////////
-    //////////////////
-    //////////////////
-    //////////////////
-    public String getPath() {
-        return dir.getAbsolutePath();
-    }
-
-    @Override
-    public String toString() {
-        return "QuickQueue{" +
-                "dir=" + dir +
-                ", writer=" + writer +
-                '}';
+    public static QuickQueue createReadonlyMulti(File dir) {
+        return new QuickQueueMulti(dir);
     }
 }
