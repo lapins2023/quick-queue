@@ -13,7 +13,7 @@ public class QuickQueueReaderSingle extends QuickQueueReader {
     }
 
 
-    public QuickQueueMessage set(long offset) {
+    public QuickQueueMessage offset(long offset) {
         if (offset < 0) {
             return null;
         } else {
@@ -54,7 +54,7 @@ public class QuickQueueReaderSingle extends QuickQueueReader {
     @Override
     public QuickQueueMessage last() {
         long lastIx = Utils.getLastIx(index, true);
-        return set(lastIx);
+        return offset(lastIx);
     }
 
     public void close() {

@@ -79,7 +79,7 @@ public class QuickQueueReaderMulti extends QuickQueueReader {
         this.data = new HashMap<>();
     }
 
-    public QuickQueueMessage set(long offset) throws NotActiveException {
+    public QuickQueueMessage offset(long offset) throws NotActiveException {
         if (offset < 0) {
             return null;
         } else {
@@ -135,7 +135,7 @@ public class QuickQueueReaderMulti extends QuickQueueReader {
     @Override
     public QuickQueueMessage last() throws IOException {
         long lastIx = Utils.getLastIx(index, false);
-        return set(lastIx);
+        return offset(lastIx);
     }
 
     public void close() {
