@@ -25,7 +25,6 @@ Quick-Queue是一个Java进程内高性能，低延迟，零拷贝，持久化�
 
 ```jshelllanguage
     //打开写入
-    Writer writer = quickQueueSingle.openWrite();
     for (int i = 0; i < 10; i++) {
         long offset = writer.newMessage()
                 .packInt(i)
@@ -57,8 +56,8 @@ Quick-Queue是一个Java进程内高性能，低延迟，零拷贝，持久化�
     }
     System.out.println("---------");
     QuickQueueReader reader = quickQueueSingle.createReader();
-    //setOffset 会返回当前message
-    System.out.println(reader.setOffset(80).unpackInt());
+    //set 会返回当前message
+    System.out.println(reader.set(80).unpackInt());
     reader.forEach((message) -> {
         int intVal = message.unpackInt();
         BigDecimal decimalVal = message.unpackBigDecimal();
@@ -78,7 +77,7 @@ Quick-Queue是一个Java进程内高性能，低延迟，零拷贝，持久化�
 ```jshelllanguage
 {
     QuickQueueReader reader = quickQueueSingle.createReader();
-    reader.setOffset(32);
+    reader.set(32);
     while (true) {
         QuickQueueMessage message = reader.next();
         if (message != null) {
@@ -103,7 +102,7 @@ Quick-Queue是一个Java进程内高性能，低延迟，零拷贝，持久化�
 ```jshelllanguage
 {
     QuickQueueReader reader = quickQueueSingle.createReader();
-    QuickQueueMessage message = reader.setOffset(32);
+    QuickQueueMessage message = reader.set(32);
     int intVal = message.unpackInt();
     BigDecimal decimalVal = message.unpackBigDecimal();
     String stringVal = message.unpackString();

@@ -47,7 +47,7 @@ public class RTest {
         }
         System.out.println("---------");
         QuickQueueReaderSingle reader = quickQueueSingle.createReader();
-        System.out.println(reader.setOffset(80).unpackInt());
+        System.out.println(reader.set(80).unpackInt());
         reader.forEach((message) -> {
             int intVal = message.unpackInt();
             BigDecimal decimalVal = message.unpackBigDecimal();
@@ -64,7 +64,7 @@ public class RTest {
     @Test
     public void t3() throws InterruptedException {
         QuickQueueReaderSingle reader = quickQueueSingle.createReader();
-        reader.setOffset(32);
+        reader.set(32);
         while (true) {
             QuickQueueMessage message = reader.next();
             if (message != null) {

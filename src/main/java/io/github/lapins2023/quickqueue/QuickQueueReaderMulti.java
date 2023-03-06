@@ -9,7 +9,6 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -80,7 +79,7 @@ public class QuickQueueReaderMulti extends QuickQueueReader {
         this.data = new HashMap<>();
     }
 
-    public QuickQueueMessage setOffset(long offset) throws NotActiveException {
+    public QuickQueueMessage set(long offset) throws NotActiveException {
         if (offset < 0) {
             return null;
         } else {
@@ -131,6 +130,12 @@ public class QuickQueueReaderMulti extends QuickQueueReader {
         } else {
             return null;
         }
+    }
+
+    @Override
+    public QuickQueueMessage last() throws IOException {
+        long lastIx = Utils.getLastIx(index, false);
+        return set(lastIx);
     }
 
     public void close() {

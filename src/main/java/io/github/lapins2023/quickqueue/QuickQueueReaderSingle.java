@@ -1,7 +1,6 @@
 package io.github.lapins2023.quickqueue;
 
 import java.nio.BufferUnderflowException;
-import java.util.Iterator;
 
 public class QuickQueueReaderSingle extends QuickQueueReader {
     private final BigBuffer index;
@@ -14,7 +13,7 @@ public class QuickQueueReaderSingle extends QuickQueueReader {
     }
 
 
-    public QuickQueueMessage setOffset(long offset) {
+    public QuickQueueMessage set(long offset) {
         if (offset < 0) {
             return null;
         } else {
@@ -50,6 +49,12 @@ public class QuickQueueReaderSingle extends QuickQueueReader {
         } else {
             return null;
         }
+    }
+
+    @Override
+    public QuickQueueMessage last() {
+        long lastIx = Utils.getLastIx(index, true);
+        return set(lastIx);
     }
 
     public void close() {

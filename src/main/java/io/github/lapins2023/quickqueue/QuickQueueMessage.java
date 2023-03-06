@@ -12,7 +12,7 @@ public class QuickQueueMessage {
         this.data = data;
     }
 
-    public QuickQueueMessage reset(long offset, long dataOffset, long len) {
+    QuickQueueMessage reset(long offset, long dataOffset, long len) {
         this.offset = offset;
         this.limit = dataOffset + len;
         this.data.offset(dataOffset);

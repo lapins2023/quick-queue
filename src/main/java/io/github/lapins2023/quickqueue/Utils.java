@@ -78,8 +78,7 @@ abstract class Utils {
             throw new IllegalArgumentException("mode must r,rw");
     }
 
-    public static long getLastIx(File dir, boolean onlyFlag) {
-        BigBuffer r = new BigBuffer("r", Utils.PAGE_SIZE, dir, "", Utils.EXT_INDEX);
+    public static long getLastIx(BigBuffer r, boolean onlyFlag) {
         long lastIx = -1;
         long size = r.size();
         if (size > 0) {
@@ -105,6 +104,12 @@ abstract class Utils {
                 }
             }
         }
+        return lastIx;
+    }
+
+    public static long getLastIx(File dir, boolean onlyFlag) {
+        BigBuffer r = new BigBuffer("r", Utils.PAGE_SIZE, dir, "", Utils.EXT_INDEX);
+        long lastIx = getLastIx(r, onlyFlag);
         r.clean();
         return lastIx;
     }

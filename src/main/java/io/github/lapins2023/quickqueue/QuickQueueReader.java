@@ -4,9 +4,11 @@ import java.io.IOException;
 import java.util.Iterator;
 
 public abstract class QuickQueueReader implements AutoCloseable, Iterable<QuickQueueMessage> {
-    public abstract QuickQueueMessage setOffset(long offset) throws IOException;
+    public abstract QuickQueueMessage set(long offset) throws IOException;
 
     public abstract QuickQueueMessage next() throws IOException;
+
+    public abstract QuickQueueMessage last() throws IOException;
 
     @Override
     public Iterator<QuickQueueMessage> iterator() {
