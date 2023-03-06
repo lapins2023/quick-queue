@@ -19,6 +19,7 @@ abstract class Utils {
 
     final static String EXT_DATA = ".qd";
     final static String EXT_INDEX = ".qx";
+    final static String EXT_M_INDEX = ".qmx";
     final static String EXT_MP = ".qm";
     final static byte FLAG = 127;
     final static int IX_MSG_LEN = (1 << 4);

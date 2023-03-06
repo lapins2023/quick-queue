@@ -18,7 +18,7 @@ class WriterMulti extends QuickQueueWriter {
 
     public WriterMulti(QuickQueueMulti qkq) {
         super(new BigBuffer("rw", Utils.PAGE_SIZE, Utils.mkdir(new File(qkq.dir, Utils.fromMPN(qkq.mpn))), "", Utils.EXT_DATA));
-        this.index = new BigBuffer("rw", Utils.PAGE_SIZE, qkq.dir, "", Utils.EXT_INDEX);
+        this.index = new BigBuffer("rw", Utils.PAGE_SIZE, qkq.dir, "", Utils.EXT_M_INDEX);
         this.mpn = qkq.mpn;
         try {
             long o1;

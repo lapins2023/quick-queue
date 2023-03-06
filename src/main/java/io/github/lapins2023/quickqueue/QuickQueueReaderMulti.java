@@ -75,7 +75,7 @@ public class QuickQueueReaderMulti implements AutoCloseable, Iterable<QuickQueue
     }
 
     QuickQueueReaderMulti(QuickQueueMulti qkq) {
-        index = new BigBuffer("r", Utils.PAGE_SIZE, qkq.dir, "", Utils.EXT_INDEX);
+        index = new BigBuffer("r", Utils.PAGE_SIZE, qkq.dir, "", Utils.EXT_M_INDEX);
         this.qkq = qkq;
         this.data = new HashMap<>();
     }
