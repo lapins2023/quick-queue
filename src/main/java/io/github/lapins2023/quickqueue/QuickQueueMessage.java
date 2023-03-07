@@ -63,6 +63,10 @@ public class QuickQueueMessage {
         return data.getInt();
     }
 
+    public short unpackShort() {
+        return data.getShort();
+    }
+
     public long unpackLong() {
         return data.getLong();
     }

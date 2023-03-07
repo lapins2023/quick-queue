@@ -18,7 +18,7 @@ public class QuickQueueReaderSingle extends QuickQueueReader {
             return null;
         } else {
             if ((offset >> 4) << 4 != offset) {
-                throw new IllegalArgumentException("Offset=" + offset);
+                throw new IllegalArgumentException("offset=" + offset);
             }
             index.offset(offset);
             return next();
