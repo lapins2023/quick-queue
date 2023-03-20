@@ -9,27 +9,19 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class QuickQueueReaderMulti extends QuickQueueReader {
-    static final Map<Integer, Data> DATA = new ConcurrentHashMap<>();
-
-
     private final BigBuffer index;
     private final QuickQueueMulti qkq;
-    private final HashMap<Integer, Integer> data;
+    private final HashMap<Integer, Data> data = new HashMap<>();
 
 
     static class Data {
-        static final AtomicInteger ID = new AtomicInteger();
-        final int id = ID.getAndIncrement();
-
         final BigBuffer buffer;
-        private final int mpn;
         final QuickQueueMessage message;
         final FileChannel mpoC;
+        private final int mpn;
+        private final RandomAccessFile raf;
         int lastHit = (int) (System.currentTimeMillis() >> 10);
 
         public Data(File qkqDir, int mpn) throws NotActiveException {
@@ -41,13 +33,13 @@ public class QuickQueueReaderMulti extends QuickQueueReader {
             buffer = new BigBuffer("r", Utils.PAGE_SIZE, dir, "", Utils.EXT_DATA);
             this.mpn = mpn;
             message = new QuickQueueMessage(buffer);
-            try (RandomAccessFile rw = new RandomAccessFile(
-                    new File(qkqDir, Utils.fromMPN(mpn) + Utils.EXT_MP), "r")) {
-                this.mpoC = rw.getChannel();
+            try {
+                this.raf = new RandomAccessFile(
+                        new File(qkqDir, Utils.fromMPN(mpn) + Utils.EXT_MP), "rw");
+                this.mpoC = raf.getChannel();
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-            DATA.put(id, this);
         }
 
         public void check() throws NotActiveException {
@@ -60,23 +52,26 @@ public class QuickQueueReaderMulti extends QuickQueueReader {
                 }
             } catch (NotActiveException e) {
                 throw e;
-            } catch (OverlappingFileLockException ignored) {
-
+            } catch (OverlappingFileLockException e) {
+                e.printStackTrace();
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }
 
         void close() {
-            DATA.remove(id);
             buffer.clean();
+            try {
+                raf.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
     QuickQueueReaderMulti(QuickQueueMulti qkq) {
         index = new BigBuffer("r", Utils.PAGE_SIZE, qkq.dir, "", Utils.EXT_M_INDEX);
         this.qkq = qkq;
-        this.data = new HashMap<>();
     }
 
     public QuickQueueMessage offset(long offset) throws NotActiveException {
@@ -106,15 +101,20 @@ public class QuickQueueReaderMulti extends QuickQueueReader {
             }
         }
         if (b > 0) {
+            long l = System.currentTimeMillis();
+            while (System.currentTimeMillis() == l) {
+                if (index.markGet(Utils.FLAG_OFF) == Utils.FLAG) {
+                    break;
+                }
+            }
             long offset = index.offset();
             long dataOffset = index.getLong();
             long stamp = index.getLong();
             int mpn = Utils.getMPN(stamp);
-            Integer mpdId = data.get(mpn);
-            Data mpd;
-            if (mpdId == null || (mpd = DATA.get(mpdId)) == null) {
+            Data mpd = data.get(mpn);
+            if (mpd == null) {
                 mpd = new Data(qkq.dir, mpn);
-                data.put(mpn, mpd.id);
+                data.put(mpn, mpd);
             }
             if (Utils.notFlag(stamp)) {
                 mpd.check();
@@ -140,11 +140,8 @@ public class QuickQueueReaderMulti extends QuickQueueReader {
 
     public void close() {
         index.clean();
-        for (Integer mpdId : data.values()) {
-            Data remove = DATA.remove(mpdId);
-            if (remove != null) {
-                remove.close();
-            }
+        for (Data d : data.values()) {
+            d.close();
         }
     }
 

@@ -19,7 +19,7 @@ class PageBuffer {
         return "PageBuffer[(" + page + "/" + address + ")" + buffer + ']';
     }
 
-    public void uPosition(int pos) {
+    public void setPos(int pos) {
         buffer.position(pos);
     }
 }

@@ -14,18 +14,18 @@ class WriterMulti extends QuickQueueWriter {
     private final long mpoAIx;
     private final long mpoA2;
     private final int mpn;
+    private final RandomAccessFile raf;
     private boolean nextMpoA;
 
     public WriterMulti(QuickQueueMulti qkq) {
         super(new BigBuffer("rw", Utils.PAGE_SIZE, Utils.mkdir(new File(qkq.dir, Utils.fromMPN(qkq.mpn))), "", Utils.EXT_DATA));
         this.index = new BigBuffer("rw", Utils.PAGE_SIZE, qkq.dir, "", Utils.EXT_M_INDEX);
         this.mpn = qkq.mpn;
+        long o1;
+        long o2;
         try {
-            long o1;
-            long o2;
-            try (RandomAccessFile rw = new RandomAccessFile(new File(qkq.dir, Utils.fromMPN(qkq.mpn) + Utils.EXT_MP), "rw")) {
-                this.mpoC = rw.getChannel();
-            }
+            this.raf = new RandomAccessFile(new File(qkq.dir, Utils.fromMPN(qkq.mpn) + Utils.EXT_MP), "rw");
+            this.mpoC = raf.getChannel();
             mpoC.lock();
             this.mpoM = (MappedByteBuffer) mpoC.map(FileChannel.MapMode.READ_WRITE, 0, 32)
                     .order(Utils.NativeByteOrder);
@@ -54,7 +54,6 @@ class WriterMulti extends QuickQueueWriter {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-
     }
 
     @Override
@@ -94,7 +93,7 @@ class WriterMulti extends QuickQueueWriter {
         index.clean();
         data.clean();
         try {
-            mpoC.close();
+            raf.close();
         } catch (IOException ignored) {
         }
     }

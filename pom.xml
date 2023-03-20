@@ -20,6 +20,7 @@
             <version>4.13.2</version>
             <scope>test</scope>
         </dependency>
+        <!--对比测试-->
         <dependency>
             <groupId>net.openhft</groupId>
             <artifactId>chronicle-queue</artifactId>

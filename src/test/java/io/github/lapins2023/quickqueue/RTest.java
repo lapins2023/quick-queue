@@ -6,8 +6,6 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.nio.file.Files;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -110,7 +108,7 @@ public class RTest {
                 if (i == null) {
                     continue;
                 }
-                if (i < 100000000) {
+                if (i < 1000000) {
                     if (i == 0) {
                         System.out.println("start");
                         start.set(System.currentTimeMillis());
@@ -160,7 +158,7 @@ public class RTest {
                     continue;
                 }
                 int i = m.unpackInt();
-                if (i < 100000000) {
+                if (i < 1000000) {
                     if (i == 0) {
                         System.out.println("start");
                         start.set(System.currentTimeMillis());
@@ -174,6 +172,83 @@ public class RTest {
                 }
             }
         }).start();
+        Thread.sleep(Integer.MAX_VALUE);
+    }
+
+    @Test
+    public void d4() throws InterruptedException, IOException {
+        File file = new File("tmp/t1");
+        File file2 = new File("tmp/t2");
+        FileUtils.clean(file);
+        FileUtils.clean(file2);
+        QuickQueue q1 = new QuickQueueMulti(file, "rw", "A11");
+        QuickQueue q2 = new QuickQueueMulti(file2, "rw", "A12");
+
+        Thread thread = new Thread(() -> {
+            try {
+                QuickQueueReader reader = q1.createReader();
+                boolean z = false;
+                while (true) {
+                    QuickQueueMessage next = null;
+                    next = reader.next();
+                    if (next == null) {
+                        continue;
+                    }
+                    int i = next.unpackInt();
+                    if (i == 0) {
+                        if (z) {
+                            while (true) {
+                                next.pos(0);
+                                System.out.println("o:" + next.unpackInt());
+                                Thread.sleep(5_00);
+                            }
+                        } else {
+                            z = true;
+                        }
+                    }
+                    long l = q2.newMessage()
+                            .packInt(i)
+                            .writeMessage();
+//                    System.out.println(l + ":" + i);
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+        thread.setName("b");
+        thread.start();
+        Thread.sleep(3_000);
+        Thread start1 = new Thread(() -> {
+            try {
+                AtomicLong start = new AtomicLong(0);
+                QuickQueueReader reader = q2.createReader();
+                q1.newMessage().packInt(0).writeMessage();
+                while (true) {
+                    QuickQueueMessage m = reader.next();
+                    if (m == null) {
+                        continue;
+                    }
+                    int i = m.unpackInt();
+//                    System.out.println(m.getOffset() + "," + i);
+                    if (i < 1000000) {
+                        if (i == 0) {
+                            System.out.println("start");
+                            start.set(System.currentTimeMillis());
+                        }
+                        q1.newMessage().packInt(++i).writeMessage();
+                    } else {
+                        System.out.println("onMessage==" + i);
+                        //573
+                        System.out.println("use=" + (System.currentTimeMillis() - start.get()));
+                        System.exit(0);
+                    }
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        start1.setName("a");
+        start1.start();
         Thread.sleep(Integer.MAX_VALUE);
     }
 }

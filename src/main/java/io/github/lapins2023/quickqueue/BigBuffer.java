@@ -30,7 +30,7 @@ public class BigBuffer {
         this.pageSize = pageSize;
         pageMaxPos = this.pageSize - 1;
         if ((this.pageSize & pageMaxPos) != 0) {
-            throw new IllegalArgumentException("QKQPageSizeMust2<<");
+            throw new IllegalArgumentException("QKQPageSizeMustPowerOf2");
         }
         pageBitSize = Integer.SIZE - Integer.numberOfLeadingZeros(pageMaxPos);
         this.mode = mode.toLowerCase(Locale.ROOT);
@@ -111,14 +111,14 @@ public class BigBuffer {
             pb = curr_;
         }
         if (pb.buffer.position() != pos) {
-            pb.uPosition(pos);
+            pb.setPos(pos);
         }
         return this;
     }
 
     public BigBuffer skip(int skip) {
         if (pb.buffer.remaining() > skip) {
-            pb.uPosition(pb.buffer.position() + skip);
+            pb.setPos(pb.buffer.position() + skip);
         } else {
             offset(offset() + skip);
         }
