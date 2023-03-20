@@ -4,7 +4,12 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class RTest {
 
@@ -12,10 +17,10 @@ public class RTest {
 
     @Before
     public void setUp() throws Exception {
-        File file = new File("tmp/t1");
+//        File file = new File("tmp/t1");
 //        Files.delete(file.toPath());
 //        Files.createDirectory(file.toPath());
-        quickQueueSingle = new QuickQueueSingle(file,"rw");
+//        quickQueueSingle = new QuickQueueSingle(file, "rw");
     }
 
     @Test
@@ -81,5 +86,94 @@ public class RTest {
                 Thread.sleep(1);//有实时性要求应用中可使用Thread.sleep(0)或Thread.yield或者BusyWait
             }
         }
+    }
+
+    @Test
+    public void name31() throws Exception {
+        ConcurrentLinkedQueue<Integer> queue1 = new ConcurrentLinkedQueue<>();
+        ConcurrentLinkedQueue<Integer> queue2 = new ConcurrentLinkedQueue<>();
+        new Thread(() -> {
+            while (true) {
+                Integer poll = queue1.poll();
+                if (poll == null) {
+                    continue;
+                }
+                queue2.add(poll);
+            }
+        }).start();
+        Thread.sleep(3_000);
+        new Thread(() -> {
+            queue1.add(0);
+            AtomicLong start = new AtomicLong(0);
+            while (true) {
+                Integer i = queue2.poll();
+                if (i == null) {
+                    continue;
+                }
+                if (i < 100000000) {
+                    if (i == 0) {
+                        System.out.println("start");
+                        start.set(System.currentTimeMillis());
+                    }
+                    queue1.add(++i);
+                } else {
+                    System.out.println("onMessage==" + i);
+                    //48402
+                    System.out.println("use=" + (System.currentTimeMillis() - start.get()));
+                    System.exit(0);
+                }
+            }
+        }).start();
+        Thread.sleep(Integer.MAX_VALUE);
+    }
+
+    @Test
+    public void d3() throws InterruptedException, IOException {
+        File file = new File("tmp/t1");
+        File file2 = new File("tmp/t2");
+        FileUtils.clean(file);
+        FileUtils.clean(file2);
+        QuickQueueSingle q1 = new QuickQueueSingle(file, "rw");
+        QuickQueueSingle q2 = new QuickQueueSingle(file2, "rw");
+
+        new Thread(() -> {
+            QuickQueueReaderSingle reader = q1.createReader();
+            while (true) {
+                QuickQueueMessage next = reader.next();
+                if (next == null) {
+                    continue;
+                }
+                int i = next.unpackInt();
+                q2.newMessage()
+                        .packInt(i)
+                        .writeMessage();
+            }
+        }).start();
+        Thread.sleep(3_000);
+        new Thread(() -> {
+            q1.newMessage().packInt(0).writeMessage();
+            AtomicLong start = new AtomicLong(0);
+            QuickQueueReaderSingle reader = q2.createReader();
+            while (true) {
+                QuickQueueMessage m = reader.next();
+                if (m == null) {
+                    continue;
+                }
+                int i = m.unpackInt();
+                if (i < 100000000) {
+                    if (i == 0) {
+                        System.out.println("start");
+                        start.set(System.currentTimeMillis());
+                    }
+                    q1.newMessage().packInt(++i).writeMessage();
+                } else {
+                    System.out.println("onMessage==" + i);
+                    //38629
+                    System.out.println("use=" + (System.currentTimeMillis() - start.get()));
+                    System.exit(0);
+                }
+            }
+        }).start();
+        Thread.sleep(Integer.MAX_VALUE);
     }
 }

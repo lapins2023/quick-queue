@@ -44,16 +44,20 @@ public class BigBuffer {
             if (pb != null && pb.page == page) return pb;
             if (pbM != null && pbM.page == page) return pbM;
             File file = new File(dir, fileNamePrefix + page + fileNameSuffix);
-            if (mode.equals("r") && !file.exists()) {
+            boolean r = mode.equals("r");
+            if (r && (!file.exists() || file.length() < pageSize)) {
                 return null;
             }
             if (cOffset(page, pageSize) < 0) {
                 throw new Exception("PageOverflow=" + page);
             }
-            try (RandomAccessFile rw = new RandomAccessFile(file, mode)) {
-                try (FileChannel channel = rw.getChannel()) {
+            try (RandomAccessFile raf = new RandomAccessFile(file, mode)) {
+                if (r && raf.length() < pageSize) {
+                    return null;
+                }
+                try (FileChannel channel = raf.getChannel()) {
                     MappedByteBuffer map = (MappedByteBuffer) channel
-                            .map(mode.equals("r") ? FileChannel.MapMode.READ_ONLY : FileChannel.MapMode.READ_WRITE
+                            .map(r ? FileChannel.MapMode.READ_ONLY : FileChannel.MapMode.READ_WRITE
                                     , 0, pageSize)
                             .order(Utils.NativeByteOrder);
                     return new PageBuffer(page, map);
