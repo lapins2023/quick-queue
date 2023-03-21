@@ -9,6 +9,8 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.concurrent.TimeUnit;
 
 public class QuickQueueReaderMulti extends QuickQueueReader {
     private final BigBuffer index;
@@ -53,7 +55,7 @@ public class QuickQueueReaderMulti extends QuickQueueReader {
             } catch (NotActiveException e) {
                 throw e;
             } catch (OverlappingFileLockException e) {
-                e.printStackTrace();
+//                e.printStackTrace();
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -88,54 +90,83 @@ public class QuickQueueReaderMulti extends QuickQueueReader {
 
     private boolean mark = false;
 
+    private long t = -1;
+
     public QuickQueueMessage next() throws NotActiveException {
         byte b;
+        if (t < 0) {
+            if (mark) {
+                b = index.getMark();
+            } else {
+                try {
+                    b = index.markGet(Utils.MNP_OFF);
+                    mark = true;
+                } catch (BufferUnderflowException e) {
+                    return null;
+                }
+            }
+            if (b > 0) {
+                t = System.currentTimeMillis();
+                mark = false;
+                return next();
+            } else {
+                return null;
+            }
+        }
         if (mark) {
             b = index.getMark();
         } else {
             try {
-                b = index.markGet(Utils.MNP_OFF);
+                b = index.markGet(Utils.FLAG_OFF);
                 mark = true;
             } catch (BufferUnderflowException e) {
                 return null;
             }
         }
-        if (b > 0) {
-            long l = System.currentTimeMillis();
-            while (System.currentTimeMillis() == l) {
-                if (index.markGet(Utils.FLAG_OFF) == Utils.FLAG) {
-                    break;
+        if (b != Utils.FLAG) {
+            if (System.currentTimeMillis() - t > 1) {
+                index.skip(Long.BYTES);
+                int mpn = Utils.getMPN(index.getLong());
+                Data mpd = data.get(mpn);
+                if (mpd == null) {
+                    data.put(mpn, (mpd = new Data(qkq.dir, mpn)));
                 }
-            }
-            long offset = index.offset();
-            long dataOffset = index.getLong();
-            long stamp = index.getLong();
-            int mpn = Utils.getMPN(stamp);
-            Data mpd = data.get(mpn);
-            if (mpd == null) {
-                mpd = new Data(qkq.dir, mpn);
-                data.put(mpn, mpd);
-            }
-            if (Utils.notFlag(stamp)) {
                 mpd.check();
-                index.offset(offset);
-                return null;
+                index.skip(-2 * Long.BYTES);
             }
-            long len = Utils.getLength(stamp);
-            QuickQueueMessage message =
-                    mpd.message.reset(offset, dataOffset, len);
-            mark = false;
-            mpd.lastHit = (int) (System.currentTimeMillis() >> 10);
-            return message;
-        } else {
             return null;
         }
+        long offset = index.offset();
+        long dataOffset = index.getLong();
+        long stamp = index.getLong();
+        int mpn = Utils.getMPN(stamp);
+        Data mpd = data.get(mpn);
+        if (mpd == null) {
+            data.put(mpn, (mpd = new Data(qkq.dir, mpn)));
+        }
+        long len = Utils.getLength(stamp);
+        QuickQueueMessage message =
+                mpd.message.reset(offset, dataOffset, len);
+        mark = false;
+        t = -1;
+        mpd.lastHit = (int) (System.currentTimeMillis() >> 10);
+        return message;
     }
 
     @Override
     public QuickQueueMessage last() throws IOException {
         long lastIx = Utils.getLastIx(index, false);
         return offset(lastIx);
+    }
+
+    public void clean() {
+        int now = (int) (System.currentTimeMillis() >> 10);
+        for (Integer key : new HashSet<>(data.keySet())) {
+            Data d = data.get(key);
+            if (now - d.lastHit > TimeUnit.MINUTES.toSeconds(5)) {
+                data.remove(key).close();
+            }
+        }
     }
 
     public void close() {

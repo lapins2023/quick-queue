@@ -17,6 +17,11 @@ public class ATest {
 
 
     @Test
+    public void r1b() throws IOException, InterruptedException {
+        System.out.println(Utils.notFlag(127L << (Long.SIZE - 8)));
+    }
+
+    @Test
     public void r1() throws IOException, InterruptedException {
         File file = new File("tmp/a");
         try {

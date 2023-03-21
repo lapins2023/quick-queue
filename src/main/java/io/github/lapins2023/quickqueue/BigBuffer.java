@@ -117,11 +117,11 @@ public class BigBuffer {
     }
 
     public BigBuffer skip(int skip) {
-        if (pb.buffer.remaining() > skip) {
+        if (skip > 0 && pb.buffer.remaining() > skip || skip < 0 && pb.buffer.position() > skip) {
             pb.setPos(pb.buffer.position() + skip);
-        } else {
-            offset(offset() + skip);
+            return this;
         }
+        offset(offset() + skip);
         return this;
     }
 

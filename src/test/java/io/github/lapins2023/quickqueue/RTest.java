@@ -135,41 +135,67 @@ public class RTest {
         QuickQueueSingle q2 = new QuickQueueSingle(file2, "rw");
 
         new Thread(() -> {
-            QuickQueueReaderSingle reader = q1.createReader();
-            while (true) {
-                QuickQueueMessage next = reader.next();
-                if (next == null) {
-                    continue;
+            try {
+                QuickQueueReaderSingle reader = q1.createReader();
+                int z = -1;
+                while (true) {
+                    QuickQueueMessage m = reader.next();
+                    if (m == null) {
+                        continue;
+                    }
+                    int i = m.unpackInt();
+                    if (i < z) {
+                        while (true) {
+                            m.pos(0);
+                            System.out.println("b:" + m.unpackInt() + ",");
+                            Thread.sleep(10_00);
+                        }
+                    }
+                    z = i;
+                    q2.newMessage()
+                            .packInt(i)
+                            .writeMessage();
                 }
-                int i = next.unpackInt();
-                q2.newMessage()
-                        .packInt(i)
-                        .writeMessage();
+            } catch (Exception t) {
+                throw new RuntimeException(t);
             }
         }).start();
         Thread.sleep(3_000);
         new Thread(() -> {
-            q1.newMessage().packInt(0).writeMessage();
-            AtomicLong start = new AtomicLong(0);
-            QuickQueueReaderSingle reader = q2.createReader();
-            while (true) {
-                QuickQueueMessage m = reader.next();
-                if (m == null) {
-                    continue;
-                }
-                int i = m.unpackInt();
-                if (i < 1000000) {
-                    if (i == 0) {
-                        System.out.println("start");
-                        start.set(System.currentTimeMillis());
+            try {
+                q1.newMessage().packInt(0).writeMessage();
+                AtomicLong start = new AtomicLong(0);
+                QuickQueueReaderSingle reader = q2.createReader();
+                int z = -1;
+                while (true) {
+                    QuickQueueMessage m = reader.next();
+                    if (m == null) {
+                        continue;
                     }
-                    q1.newMessage().packInt(++i).writeMessage();
-                } else {
-                    System.out.println("onMessage==" + i);
-                    //38629
-                    System.out.println("use=" + (System.currentTimeMillis() - start.get()));
-                    System.exit(0);
+                    int i = m.unpackInt();
+                    if (i < z) {
+                        while (true) {
+                            m.pos(0);
+                            System.out.println("a:" + m.unpackInt() + ",");
+                            Thread.sleep(10_00);
+                        }
+                    }
+                    z = i;
+                    if (i < 1000000) {
+                        if (i == 0) {
+                            System.out.println("start");
+                            start.set(System.currentTimeMillis());
+                        }
+                        q1.newMessage().packInt(++i).writeMessage();
+                    } else {
+                        System.out.println("onMessage==" + i);
+                        //38629
+                        System.out.println("use=" + (System.currentTimeMillis() - start.get()));
+                        System.exit(0);
+                    }
                 }
+            } catch (Exception t) {
+                throw new RuntimeException(t);
             }
         }).start();
         Thread.sleep(Integer.MAX_VALUE);
@@ -187,25 +213,21 @@ public class RTest {
         Thread thread = new Thread(() -> {
             try {
                 QuickQueueReader reader = q1.createReader();
-                boolean z = false;
+                int z = -1;
                 while (true) {
-                    QuickQueueMessage next = null;
-                    next = reader.next();
-                    if (next == null) {
+                    QuickQueueMessage m = reader.next();
+                    if (m == null) {
                         continue;
                     }
-                    int i = next.unpackInt();
-                    if (i == 0) {
-                        if (z) {
-                            while (true) {
-                                next.pos(0);
-                                System.out.println("o:" + next.unpackInt());
-                                Thread.sleep(5_00);
-                            }
-                        } else {
-                            z = true;
+                    int i = m.unpackInt();
+                    if (i < z) {
+                        while (true) {
+                            m.pos(0);
+                            System.out.println("o:" + m.unpackInt() + ",");
+                            Thread.sleep(10_00);
                         }
                     }
+                    z = i;
                     long l = q2.newMessage()
                             .packInt(i)
                             .writeMessage();
@@ -223,6 +245,7 @@ public class RTest {
                 AtomicLong start = new AtomicLong(0);
                 QuickQueueReader reader = q2.createReader();
                 q1.newMessage().packInt(0).writeMessage();
+                int z = -1;
                 while (true) {
                     QuickQueueMessage m = reader.next();
                     if (m == null) {
@@ -235,15 +258,23 @@ public class RTest {
                             System.out.println("start");
                             start.set(System.currentTimeMillis());
                         }
+                        if (i < z) {
+                            while (true) {
+                                m.pos(0);
+                                System.out.println("b:" + m.unpackInt() + ",");
+                                Thread.sleep(10_00);
+                            }
+                        }
+                        z = i;
                         q1.newMessage().packInt(++i).writeMessage();
                     } else {
                         System.out.println("onMessage==" + i);
-                        //573
+                        //484
                         System.out.println("use=" + (System.currentTimeMillis() - start.get()));
                         System.exit(0);
                     }
                 }
-            } catch (IOException e) {
+            } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         });
